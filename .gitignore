@@ -1,0 +1,11 @@
+.python-version
+*~
+*.so
+*__pycache__/*
+*.mypy_cache/*
+*.pyc
+*.pyc*
+*.vtk
+.vscode
+!vtk_resch/*
+!vtk_singlecrease/*

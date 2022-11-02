@@ -1,0 +1,33 @@
+# Figure parameters =================================================
+# Fonts
+font.family: sans-serif
+font.sans-serif: Noto Sans Math
+font.size: 20
+
+# Figure dimensions
+figure.figsize: 8, 6
+
+figure.subplot.left: 0.175
+figure.subplot.right: 0.95
+figure.subplot.bottom: 0.175
+figure.subplot.top: 0.95
+
+# Line parameters
+lines.linewidth: 4.
+lines.markersize: 10.
+# Original fornt size is 8, multipy by above number
+legend.fontsize: 18
+# Original fornt size is 8, multipy by above number
+xtick.labelsize: 20
+# Original fornt size is 8, multipy by above number
+ytick.labelsize: 20
+xtick.direction: in
+ytick.direction: in
+
+# Image
+image.origin: lower # Origain of the image to lower left corner
+
+savefig.dpi: 300
+
+# Color cycle
+axes.prop_cycle: cycler('color', ['ff4444', '44ff44', '4444ff', 'ff8f6b'])
