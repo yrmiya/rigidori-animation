@@ -1,0 +1,10 @@
+.python-version
+*~
+*.so
+*__pycache__/*
+*.mypy_cache/*
+*.pyc
+*.pyc*
+*.vtk
+*.zip
+.vscode
