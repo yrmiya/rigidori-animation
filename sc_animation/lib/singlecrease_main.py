@@ -6,9 +6,6 @@ Written by: Yasuhiro Miyazawa
 # Import packages
 import numpy as np
 import numpy.typing as npt
-from scipy import optimize
-from scipy import interpolate
-import matplotlib
 import matplotlib.pyplot as plt
 
 import sys
@@ -133,7 +130,7 @@ class SingleCreaseAnalysis:
         with open('%s/%s_%05d.vtk' % (self.dir_save, self.fname_vtk, fnum), 'w') as f:
             # Write header lines
             f.write('# vtk DataFile Version 3.0\n')
-            f.write('Triangulated cylindrical origami (original)\n')
+            f.write('Single crease fold\n')
             f.write('ASCII\n')
             num_points = np.size(vert_xyz, axis=0)
             f.write('DATASET POLYDATA\n')

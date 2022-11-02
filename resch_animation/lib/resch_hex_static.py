@@ -16,6 +16,7 @@ import sys
 import os
 import shutil
 import zipfile
+import glob
 
 from tqdm import tqdm
 
@@ -531,6 +532,13 @@ class ReschOrigamiAnalysis:
             for i in tqdm(range(niter)):
                 self.write_vtk_1orbit(i, vert_xyz[i, :, :])
 
+            zp = zipfile.ZipFile('%s.zip' % self.dir_save, 'w')
+            dfile = glob.glob('%s/*.vtk' % self.dir_save)
+            dfile = np.sort(dfile)
+            for i in range(len(dfile)):
+                zp.write(filename=dfile[i], arcname=None, compress_type=None, compresslevel=9)
+            zp.close()
+
         if fig_out:
             self.plot_projection(vert_xyz[0], figname='(initial)')
             self.plot_projection(vert_xyz[-1], figname='(final)')
@@ -541,7 +549,7 @@ class ReschOrigamiAnalysis:
 
         with open('%s/%s_%05d.vtk' % (self.dir_save, self.fname_vtk, fnum), 'w') as f:
             f.write('# vtk DataFile Version 3.0\n')
-            f.write('Triangulated cylindrical origami (original)\n')
+            f.write('Hexagon-triangle Resch origami\n')
             f.write('ASCII\n')
             num_points = np.size(vert_xyz, axis=0)
             f.write('DATASET POLYDATA\n')
@@ -555,6 +563,7 @@ class ReschOrigamiAnalysis:
             # POLYGONS:triangles
             for ip in range(self.n_poly_tri):
                 f.write('3 %d %d %d\n' % (self.Polyg_tri[ip, 0], self.Polyg_tri[ip, 1], self.Polyg_tri[ip, 2]))
+
             # POLYGONS:hexagons
             for ip in range(self.n_poly_hex):
                 f.write('6 %d %d %d %d %d %d\n' % (self.Polyg_hex[ip, 0], self.Polyg_hex[ip, 1],
@@ -638,74 +647,6 @@ class ReschOrigamiAnalysis:
         ax[2].set_ylabel('$z$')
         ax[2].set_aspect('equal', 'box')
         fig.tight_layout()
-
-        return
-
-    def create_3Dmodel(self, theta_M: npt.ArrayLike,
-                       vert_xyz: npt.ArrayLike,
-                       dir_save: str = './vtk',
-                       fname_vtk: str = 'vtk',):
-
-        # Number of iterations
-        niter = len(theta_M)
-        # VTK export
-        self.dir_save = dir_save
-        self.fname_vtk = fname_vtk
-
-        print('Create VTK...')
-        # Delete previous data
-        if os.path.exists(self.dir_save):
-            shutil.rmtree(self.dir_save)
-        os.makedirs(self.dir_save)
-
-        # Generate vtk file
-        for ii in tqdm(range(niter)):
-            # Dummy array for panel color
-            strain = (theta_M[ii] - theta_M[0]) / (theta_M[-1] - theta_M[0]) * np.ones(self.n_poly)
-            # Call write_vtk to export vtk file at theta_M[ii]
-            self.write_vtk(ii, vert_xyz[ii, :, :], strain)
-
-        return
-
-    def write_vtk(self, fnum: int, vert_xyz: npt.ArrayLike, strain: npt.ArrayLike):
-        '''
-        write_vtk
-            Exports vtk file of the structure.
-            Created vtk files can be imported into, e.g., Paraview (https://www.paraview.org/download/).
-
-        Args:
-            fnum (int): File number in integer.
-            vert_xyz (npt.ArrayLike): xyz coordinates of all nodes
-            strain (npt.ArrayLike): Value used for coloring the polygons
-        '''
-
-        # Open file
-        with open('%s/%s_%05d.vtk' % (self.dir_save, self.fname_vtk, fnum), 'w') as f:
-            # Write header lines
-            f.write('# vtk DataFile Version 3.0\n')
-            f.write('Triangulated cylindrical origami (original)\n')
-            f.write('ASCII\n')
-            num_points = np.size(vert_xyz, axis=0)
-            f.write('DATASET POLYDATA\n')
-            # Nodes
-            # Specify number of nodes
-            f.write('POINTS %d float\n' % num_points)
-            # Write x,y,z coodinates of all nodes
-            for iv in range(num_points):
-                f.write("%f %f %f\n" % (vert_xyz[iv, 0], vert_xyz[iv, 1], vert_xyz[iv, 2]))
-
-            #   POLYGONS
-            num_dataset = self.n_poly
-            num_datanum = 4 * num_dataset
-            f.write('POLYGONS %d %d\n' % (num_dataset, num_datanum))
-            for ip in range(self.n_poly):
-                f.write('3 %d %d %d\n' % (self.Polyg[ip, 0], self.Polyg[ip, 1], self.Polyg[ip, 2]))
-
-            f.write('CELL_DATA %d\n' % num_dataset)
-            f.write('SCALARS cell_scalars float\n')
-            f.write('LOOKUP_TABLE default\n')
-            for i in range(self.n_poly):
-                f.write('%e\n' % strain[i])
 
         return
 
@@ -964,131 +905,7 @@ class ReschOrigamiAnalysis:
 
         return
 
-    # ******************************************************************
-    #  Methods specific to single crease fold example
-    # ******************************************************************
-
-    def geo_init_simplefold(self, La: float, theta_M0: float, fig_out: bool = True):
-        # **********************************************
-        # Simple crease fold with two regular triangles
-        #                    3
-        #                  / | \
-        #                 /  |  \
-        #                /   |   \
-        #               /    |    \
-        #              /     |     \
-        #             /      |      \
-        #            /       |       \
-        #           1        |        0
-        #            \       |       /
-        #             \      |      /
-        #              \     |     /
-        #               \    |    /
-        #                \   |   /
-        #                 \  |  /
-        #                  \ | /
-        #                    2
-        # **********************************************
-        self.La = La
-        self.theta_M0 = theta_M0
-        self.n_node = 4
-        self.n_edge = 5
-        self.n_poly = 2
-
-        # Define node
-        vert_xyz = self.find_geo_simplefold(theta_M0, La)
-
-        # Define creases
-        EdgeConct = np.zeros((self.n_edge, 2), dtype=int)
-        EdgeConct[0, :] = [0, 2]
-        EdgeConct[1, :] = [0, 3]
-        EdgeConct[2, :] = [1, 2]
-        EdgeConct[3, :] = [1, 3]
-        EdgeConct[4, :] = [2, 3]
-
-        # Define polygon
-        Polyg = np.zeros((self.n_poly, 3), dtype=int)
-        Polyg[0, :] = [0, 2, 3]
-        Polyg[1, :] = [1, 2, 3]
-
-        self.vert_xyz0 = vert_xyz
-        self.EdgeConct = EdgeConct
-        self.Polyg = Polyg
-
-        print('{0:*^49}'.format(''))
-        print(' Initialize Simple Crease Fold Geometry')
-        print('  {0:<24s} : {1:.6f}'.format('Side length', self.La))
-        print('  {0:<24s} : {1:d} {2:d} {3:d}'.format('Node, crease, polygon', self.n_node, self.n_edge, self.n_poly))
-        print('  {0:<24s} : {1:.6f} (deg)'.format('Initial fold angle', np.degrees(self.theta_M0)))
-        print('{0:*^49}'.format(''))
-
-        if fig_out:
-            self.plot_projection(vert_xyz, figname='(init)')
-
-        return
-
-    def find_geo_simplefold(self, theta_M: float, La: float):
-        '''
-        find_geo_simplefold
-            Find the xyz coordinates of all nodes at specified theta_M.
-
-        Args:
-            theta_M (float): folding angle
-            La (float): side length of regular triangle
-
-        Returns:
-            vert_xyz
-        '''
-        vert_xyz = np.zeros((self.n_node, 3))
-        vert_xyz[0, 0] = 0.5 * np.sqrt(3) * La * np.cos(0.5 * (np.pi - theta_M))
-        vert_xyz[0, 2] = 0.5 * np.sqrt(3) * La * np.sin(0.5 * (np.pi - theta_M))
-        vert_xyz[1, 0] = -0.5 * np.sqrt(3) * La * np.cos(0.5 * (np.pi - theta_M))
-        vert_xyz[1, 2] = 0.5 * np.sqrt(3) * La * np.sin(0.5 * (np.pi - theta_M))
-        vert_xyz[2, 1] = -0.5 * La
-        vert_xyz[3, 1] = 0.5 * La
-
-        return vert_xyz
-
-    def create_3Dmodel_simplefold(self, theta_M: list | np.ndarray):
-
-        niter = len(theta_M)
-        # VTK export
-        self.dir_save = './vtk_simplefold'
-        self.fname_vtk = 'simplefold'
-
-        print('Create VTK...')
-        # Delete previous data
-        if os.path.exists(self.dir_save):
-            shutil.rmtree(self.dir_save)
-        os.makedirs(self.dir_save)
-        # Generate vtk file
-        for ii in tqdm(range(niter)):
-            vert_xyz = self.find_geo_simplefold(theta_M[ii], self.La)
-            # Dummy array for panel color
-            strain = (theta_M[ii] - theta_M[0]) / (theta_M[-1] - theta_M[0]) * np.ones(self.n_poly)
-            self.write_vtk(ii, vert_xyz, strain)
-
-        return
-
 
 if __name__ == "__main__":
 
-    a = 1.0
-
-    nbin = 100
-    theta_M = np.linspace(0., 0.5 * np.pi, nbin)
-    # theta_M=np.linspace(np.pi/2, 0, N)
-    x0 = np.radians(0.1)
-
-    ROA = ReschOrigamiAnalysis()
-    # theta_MKJS = ROA.find_theta_MKJS(theta_M=theta_M,
-    #                                  a=a, x0=x0,
-    #                                  save_lookuptab=True,
-    #                                  )
-
-    theta_M = np.linspace(0.25 * np.pi, np.pi, 500)
-    ROA.geo_init_simplefold(La=a, theta_M0=theta_M[0])
-    ROA.create_3Dmodel_simplefold(theta_M)
-
-    plt.show()
     exit()
