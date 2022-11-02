@@ -15,6 +15,7 @@ import sys
 import os
 import shutil
 import zipfile
+import glob
 
 from tqdm import tqdm
 
@@ -176,6 +177,13 @@ class SingleCreaseAnalysis:
             # Dummy array for panel color
             strain = (theta_M[ii] - theta_M[0]) / (theta_M[-1] - theta_M[0]) * np.ones(self.n_poly)
             self.write_vtk(ii, vert_xyz, strain)
+
+        zp = zipfile.ZipFile('%s.zip' % self.dir_save, 'w')
+        dfile = glob.glob('%s/*.vtk' % self.dir_save)
+        dfile = np.sort(dfile)
+        for i in range(len(dfile)):
+            zp.write(filename=dfile[i], arcname=None, compress_type=None, compresslevel=9)
+        zp.close()
 
         return
 
