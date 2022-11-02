@@ -9,18 +9,18 @@ def main():
     sca = SingleCreaseAnalysis()
 
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('-sl', '--sidelength', help='Side length (float)', type=float, default=1.0)
-    parser.add_argument('-nbin', '--nbin', help='Number of steps (int)', type=int, default=64)
-    parser.add_argument('-th0', '--theta0', help='Initial fold angle (float)', type=float, default=0.25 * np.pi)
-    parser.add_argument('-thf', '--thetaf', help='Final fold angle (float)', type=float, default=np.pi)
-    parser.add_argument('-zip', '--savezip', help='Option to compress vtk files into zip file (True|False)', type=bool, default=False)
-    parser.add_argument('-fig', '--figout', help='Option to display plots (True|False)', type=bool, default=False)
+    parser.add_argument('-sl', '--sidelength', help='Side length (float, default=1.0)', type=float, default=1.0)
+    parser.add_argument('-nbin', '--nbin', help='Number of steps (int, default=64)', type=int, default=64)
+    parser.add_argument('-th0', '--theta0', help='Initial fold angle (float, default=45 deg)', type=float, default=45.0)
+    parser.add_argument('-thf', '--thetaf', help='Final fold angle (float, default=180 deg)', type=float, default=180.0)
+    parser.add_argument('-zip', '--savezip', help='Option to compress vtk files into zip file (True|False, default=False)', type=bool, default=False)
+    parser.add_argument('-fig', '--figout', help='Option to display plots (True|False, default=False)', type=bool, default=False)
 
     args = parser.parse_args()
     La = args.sidelength
     nbin = args.nbin
-    theta0 = args.theta0
-    thetaf = args.thetaf
+    theta0 = np.radians(args.theta0)
+    thetaf = np.radians(args.thetaf)
     fig_out = args.figout
     save_zip = args.savezip
 
