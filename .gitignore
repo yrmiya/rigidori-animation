@@ -6,6 +6,5 @@
 *.pyc
 *.pyc*
 *.vtk
+*.zip
 .vscode
-!vtk_resch/*
-!vtk_singlecrease/*
