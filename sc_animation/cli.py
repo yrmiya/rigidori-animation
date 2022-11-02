@@ -9,14 +9,18 @@ def main():
     sca = SingleCreaseAnalysis()
 
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('-sa', '--sidelength', help='Side length', type=float, default=1.0)
+    parser.add_argument('-sl', '--sidelength', help='Side length', type=float, default=1.0)
     parser.add_argument('-nbin', '--nbin', help='Number of steps', type=int, default=64)
+    parser.add_argument('-th0', '--theta0', help='Initial fold angle', type=float, default=0.25 * np.pi)
+    parser.add_argument('-thf', '--thetaf', help='Final fold angle', type=float, default=np.pi)
 
     args = parser.parse_args()
     La = args.sidelength
     nbin = args.nbin
+    theta0 = args.theta0
+    thetaf = args.thetaf
 
-    theta_M = np.linspace(0.25 * np.pi, np.pi, nbin)
+    theta_M = np.linspace(theta0, thetaf, nbin)
     sca.geo_init_simplefold(La=La, theta_M0=theta_M[0])
     sca.create_3Dmodel_simplefold(theta_M)
 
