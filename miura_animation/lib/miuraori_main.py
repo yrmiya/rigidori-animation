@@ -29,44 +29,62 @@ class MiuraOriAnalysis:
         pass
 
     def geo_init_miura(self, n_unitx: int, n_unity: int,
-                       La: float, Lb: float, alpha: float,
+                       La: float, Lb: float, Ld: float,
+                       alpha: float,
                        theta_M0: float,
-                       fig_out: bool = True):
+                       fig_out: bool = True,
+                       ):
         # **********************************************
         #        Miura-ori unit node definition
         # **********************************************
-        #                    3
-        #                  / | \
-        #                 /  |  \
-        #                /   |   \
-        #               /    |    \
-        #              /     |     \
-        #             /      |      \
-        #            /       |       \
-        #           1        |        0
-        #            \       |       /
-        #             \      |      /
-        #              \     |     /
-        #               \    |    /
-        #                \   |   /
-        #                 \  |  /
-        #                  \ | /
-        #                    2
+        #  O ----> y
+        #  |
+        #  | x
+        #  v
+        #          0 ------------- 3 ---------- 6
+        #         /               /            /
+        #        /               /            /
+        #       /               /            /
+        #      1 -------a----- 4 -----b---- 7      ---
+        #       \               \            \      |
+        #        \               \            \     | d
+        #         \               \      alpha \    |
+        #          2 ------------- 5 ---------- 8  ---
         # **********************************************
+
         self.La = La
+        self.Lb = Lb
+        self.Ld = Ld
+        self.alpha = alpha
         self.theta_M0 = theta_M0
         self.n_node = (2 * n_unitx + 3) * n_unity
-        self.n_edge = 2 * n_unitx * (n_unity + 1) + 2 * n_unity * (n_unitx)
+        self.n_edge = (2 * n_unitx + 1) * (n_unity + 1) + (2 * n_unity + 1) * (n_unitx + 1)
         self.n_poly = 4 * n_unitx * n_unity
 
         # Define nodal coordinates
-        vert_xyz = self.find_geo_miura(theta_M0, La)
+        vert_xyz = self.find_geo_miura_unit(theta_M0)
 
         # Define edge connection
         EdgeConct = np.zeros((self.n_edge, 2), dtype=int)
+        EdgeConct[0, :] = [0, 1]
+        EdgeConct[1, :] = [1, 2]
+        EdgeConct[2, :] = [3, 4]
+        EdgeConct[3, :] = [4, 5]
+        EdgeConct[4, :] = [6, 7]
+        EdgeConct[5, :] = [7, 8]
+        EdgeConct[6, :] = [0, 3]
+        EdgeConct[7, :] = [3, 6]
+        EdgeConct[8, :] = [1, 4]
+        EdgeConct[9, :] = [4, 7]
+        EdgeConct[10, :] = [2, 5]
+        EdgeConct[11, :] = [5, 8]
 
         # Define polygon
-        Polyg = np.zeros((self.n_poly, 3), dtype=int)
+        Polyg = np.zeros((self.n_poly, 4), dtype=int)
+        Polyg[0, :] = [0, 1, 4, 3]
+        Polyg[1, :] = [1, 2, 5, 4]
+        Polyg[2, :] = [3, 4, 7, 6]
+        Polyg[3, :] = [4, 5, 8, 7]
 
         self.vert_xyz0 = vert_xyz
         self.EdgeConct = EdgeConct
@@ -84,28 +102,37 @@ class MiuraOriAnalysis:
 
         return
 
-    def find_geo_miura(self, theta_M: float, La: float):
-        '''
-        find_geo_miura
-            Find the xyz coordinates of all nodes at specified theta_M.
+    def find_geo_miura_unit(self, theta_M: float):
 
-        Args:
-            theta_M (float): folding angle
-            La (float): side length of regular triangle
-
-        Returns:
-            vert_xyz
-        '''
-
-        vert_xyz = np.zeros((self.n_node, 3))
-        vert_xyz[0, 0] = 0.5 * np.sqrt(3) * La * np.cos(0.5 * (np.pi - theta_M))
-        vert_xyz[0, 2] = 0.5 * np.sqrt(3) * La * np.sin(0.5 * (np.pi - theta_M))
-        vert_xyz[1, 0] = -0.5 * np.sqrt(3) * La * np.cos(0.5 * (np.pi - theta_M))
-        vert_xyz[1, 2] = 0.5 * np.sqrt(3) * La * np.sin(0.5 * (np.pi - theta_M))
-        vert_xyz[2, 1] = -0.5 * La
-        vert_xyz[3, 1] = 0.5 * La
+        vert_xyz = np.zeros((9, 3))
+        xi = np.tan(self.alpha) * np.cos(theta_M)
+        cota = 1. / np.tan(self.alpha)
+        ex = np.array([1., 0, 0.])
+        ey = np.array([0., 1, 0.])
+        ez = np.array([0., 0, 1.])
+        e1 = np.array([0, (1 - xi**2) / (1 + xi**2), (2 * xi) / (1 + xi**2)])
+        e2 = 1. / (1. + cota**2) * np.array([np.sin(theta_M), cota, np.cos(theta_M)])
+        e2n = 1. / (1. + cota**2) * np.array([-np.sin(theta_M), cota, np.cos(theta_M)])
+        vert_xyz[0, :] = self.Ld / np.sin(self.alpha) * e2n
+        vert_xyz[1, :] = 0.0
+        vert_xyz[2, :] = self.Ld / np.sin(self.alpha) * e2
+        vert_xyz[3, :] = self.La * ey + self.Ld / np.sin(self.alpha) * e2n
+        vert_xyz[4, :] = self.La * ey
+        vert_xyz[5, :] = self.La * ey + self.Ld / np.sin(self.alpha) * e2
+        vert_xyz[6, :] = self.La * ey + self.Lb * e1 + self.Ld / np.sin(self.alpha) * e2n
+        vert_xyz[7, :] = self.La * ey + self.Lb * e1
+        vert_xyz[8, :] = self.La * ey + self.Lb * e1 + self.Ld / np.sin(self.alpha) * e2
 
         return vert_xyz
+
+    def calc_facet_area(self, vert_xyz: npt.ArrayLike):
+        facet_area = np.zeros(self.n_poly)
+        for ip in range(self.n_poly):
+            vec1 = vert_xyz[self.Polyg[ip, 0], :] - vert_xyz[self.Polyg[ip, 1], :]
+            vec2 = vert_xyz[self.Polyg[ip, 2], :] - vert_xyz[self.Polyg[ip, 1], :]
+            facet_area[ip] = np.linalg.norm(np.cross(vec1, vec2))
+
+        return facet_area
 
     def write_vtk(self, fnum: int, vert_xyz: npt.ArrayLike, strain: npt.ArrayLike):
         '''
@@ -136,10 +163,10 @@ class MiuraOriAnalysis:
 
             #   POLYGONS
             num_dataset = self.n_poly
-            num_datanum = 4 * num_dataset
+            num_datanum = 5 * num_dataset
             f.write('POLYGONS %d %d\n' % (num_dataset, num_datanum))
             for ip in range(self.n_poly):
-                f.write('3 %d %d %d\n' % (self.Polyg[ip, 0], self.Polyg[ip, 1], self.Polyg[ip, 2]))
+                f.write('4 %d %d %d %d\n' % tuple(self.Polyg[ip, :]))
 
             f.write('CELL_DATA %d\n' % num_dataset)
             f.write('SCALARS cell_scalars float\n')
@@ -149,12 +176,13 @@ class MiuraOriAnalysis:
 
         return
 
-    def create_3Dmodel_simplefold(self, theta_M: list | np.ndarray):
+    def create_3Dmodel(self, theta_M: list | np.ndarray,
+                       save_zip: bool = False):
 
         niter = len(theta_M)
         # VTK export
-        self.dir_save = './vtk_singlecrease'
-        self.fname_vtk = 'singlecrease'
+        self.dir_save = './vtk_miura'
+        self.fname_vtk = 'miura'
 
         print('Create VTK...')
         # Delete previous data
@@ -163,17 +191,18 @@ class MiuraOriAnalysis:
         os.makedirs(self.dir_save)
         # Generate vtk file
         for ii in tqdm(range(niter)):
-            vert_xyz = self.find_geo_simplefold(theta_M[ii], self.La)
+            vert_xyz = self.find_geo_miura_unit(theta_M[ii])
             # Dummy array for panel color
-            strain = (theta_M[ii] - theta_M[0]) / (theta_M[-1] - theta_M[0]) * np.ones(self.n_poly)
+            strain = self.calc_facet_area(vert_xyz=vert_xyz)
             self.write_vtk(ii, vert_xyz, strain)
 
-        zp = zipfile.ZipFile('%s.zip' % self.dir_save, 'w')
-        dfile = glob.glob('%s/*.vtk' % self.dir_save)
-        dfile = np.sort(dfile)
-        for i in range(len(dfile)):
-            zp.write(filename=dfile[i], arcname=None, compress_type=None, compresslevel=9)
-        zp.close()
+        if save_zip:
+            zp = zipfile.ZipFile('%s.zip' % self.dir_save, 'w')
+            dfile = glob.glob('%s/*.vtk' % self.dir_save)
+            dfile = np.sort(dfile)
+            for i in range(len(dfile)):
+                zp.write(filename=dfile[i], arcname=None, compress_type=None, compresslevel=9)
+            zp.close()
 
         return
 
