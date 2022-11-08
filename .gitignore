@@ -8,3 +8,4 @@
 *.vtk
 *.zip
 .vscode
+!example/*
