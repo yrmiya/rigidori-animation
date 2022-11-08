@@ -44,7 +44,11 @@ class ReschOrigamiAnalysis:
 
         pass
 
-    def geo_init(self, La: float, n_orbit: int, theta_M0: float):
+    def geo_init(self, La: float,
+                 theta_M0: float,
+                 theta_MKJS: npt.ArrayLike,
+                 use_lookuptab: bool = True):
+        n_orbit = 1
         n_hex = 1 + 3 * (n_orbit + n_orbit**2)
         n_node_hex = int(6 * n_hex)
         n_node_hex_origin = int(n_hex)
@@ -80,18 +84,25 @@ class ReschOrigamiAnalysis:
         self.n_poly = n_poly
 
         # Import fold angles
-        data_th = np.genfromtxt('./lookuptable/theta_MKJS.csv', delimiter=',')
-        theta_M = data_th[:, 0]
-        theta_K = data_th[:, 1]
-        theta_J = data_th[:, 2]
-        theta_S = data_th[:, 3]
-        f_MK = interpolate.interp1d(theta_M, theta_K, kind='cubic')
-        f_MJ = interpolate.interp1d(theta_M, theta_J, kind='cubic')
-        f_MS = interpolate.interp1d(theta_M, theta_S, kind='cubic')
+        if use_lookuptab:
+            data_th = np.genfromtxt('./lookuptable/theta_MKJS.csv', delimiter=',')
+            theta_M = data_th[:, 0]
+            theta_K = data_th[:, 1]
+            theta_J = data_th[:, 2]
+            theta_S = data_th[:, 3]
+        else:
+            theta_M = theta_MKJS[:, 0]
+            theta_K = theta_MKJS[:, 1]
+            theta_J = theta_MKJS[:, 2]
+            theta_S = theta_MKJS[:, 3]
 
-        theta_K0 = f_MK(theta_M0)
-        theta_J0 = f_MJ(theta_M0)
-        theta_S0 = f_MS(theta_M0)
+        self.f_MK = interpolate.interp1d(theta_M, theta_K, kind='cubic')
+        self.f_MJ = interpolate.interp1d(theta_M, theta_J, kind='cubic')
+        self.f_MS = interpolate.interp1d(theta_M, theta_S, kind='cubic')
+
+        theta_K0 = self.f_MK(theta_M0)
+        theta_J0 = self.f_MJ(theta_M0)
+        theta_S0 = self.f_MS(theta_M0)
 
         if n_orbit == 1:
             vert_xyz, EdgeConct, Polyg_tri, Polyg_hex,\
@@ -100,9 +111,9 @@ class ReschOrigamiAnalysis:
         print('{0:*^49}'.format(''))
         print(' Initialize Resch tessellation')
         print('  {0:<32s} : {1:<12d}'.format('Number of orbit', n_orbit))
-        print('  {0:<32s} : {1:<.12f}'.format('Hexagon side length', La))
-        print('  {0:<32s} : {1:<.12f}'.format('Minor crease length', Lb))
-        print('  {0:<32s} : {1:<.12f}'.format('Major crease length', Lc))
+        print('  {0:<32s} : {1:<.12f}'.format('Hexagon side length (a)', La))
+        print('  {0:<32s} : {1:<.12f}'.format('Minor crease length (b)', Lb))
+        print('  {0:<32s} : {1:<.12f}'.format('Major crease length (c)', Lc))
         print('  {0:<32s}'.format('Initial fold angles th_M0'))
         print('    {0:<30s} : {1:<.8f} (deg)'.format('th_M0', np.degrees(theta_M0)))
         print('    {0:<30s} : {1:<.8f} (deg)'.format('th_K0', np.degrees(theta_K0)))
@@ -463,22 +474,24 @@ class ReschOrigamiAnalysis:
 
     def solve_geo_1orbit(self, theta_M: npt.ArrayLike,
                          vtk_out: bool = False, fig_out: bool = True,
-                         progbar_out: bool = True):
+                         progbar_out: bool = True,
+                         save_zip: bool = True):
+
         progbar_disable = ~progbar_out
 
         niter = len(theta_M)
 
         # Import fold angles
-        data_th = np.genfromtxt('./lookuptable/theta_MKJS.csv', delimiter=',')
-        theta_Mcsv = data_th[:, 0]
+        # data_th = np.genfromtxt('./lookuptable/theta_MKJS.csv', delimiter=',')
+        # theta_Mcsv = data_th[:, 0]
         # theta_K = data_th[:, 1]
-        theta_J = data_th[:, 2]
+        # theta_J = data_th[:, 2]
         # theta_S = data_th[:, 3]
         # f_MK = interpolate.interp1d(theta_Mcsv, theta_K, kind='cubic')
-        f_MJ = interpolate.interp1d(theta_Mcsv, theta_J, kind='cubic')
+        # f_MJ = interpolate.interp1d(theta_Mcsv, theta_J, kind='cubic')
         # f_MS = interpolate.interp1d(theta_Mcsv, theta_S, kind='cubic')
 
-        theta_J = f_MJ(theta_M)
+        theta_J = self.f_MJ(theta_M)
 
         A_global = np.zeros((42, 3))
         B_global = np.zeros((42, 3))
@@ -532,12 +545,13 @@ class ReschOrigamiAnalysis:
             for i in tqdm(range(niter)):
                 self.write_vtk_1orbit(i, vert_xyz[i, :, :])
 
-            zp = zipfile.ZipFile('%s.zip' % self.dir_save, 'w')
-            dfile = glob.glob('%s/*.vtk' % self.dir_save)
-            dfile = np.sort(dfile)
-            for i in range(len(dfile)):
-                zp.write(filename=dfile[i], arcname=None, compress_type=None, compresslevel=9)
-            zp.close()
+            if save_zip:
+                zp = zipfile.ZipFile('%s.zip' % self.dir_save, 'w')
+                dfile = glob.glob('%s/*.vtk' % self.dir_save)
+                dfile = np.sort(dfile)
+                for i in range(len(dfile)):
+                    zp.write(filename=dfile[i], arcname=None, compress_type=None, compresslevel=9)
+                zp.close()
 
         if fig_out:
             self.plot_projection(vert_xyz[0], figname='(initial)')
@@ -647,261 +661,6 @@ class ReschOrigamiAnalysis:
         ax[2].set_ylabel('$z$')
         ax[2].set_aspect('equal', 'box')
         fig.tight_layout()
-
-        return
-
-    def angl2disp(self, theta_M0: float, theta_M: float | npt.ArrayLike,
-                  fig_out=False, text_out=False, save_lookuptab: bool = False):
-        if isinstance(theta_M, float):
-            theta_M = np.array([theta_M, ])
-        else:
-            theta_M = theta_M
-
-        niter = len(theta_M)
-        disp = np.zeros(niter)
-        height = np.zeros(niter)
-
-        # Determine coordinates when fully foleded
-        vert_xyz = self.solve_geo_1orbit(theta_M=np.array([0, ]),
-                                         vtk_out=False, fig_out=False,
-                                         progbar_out=False)
-        # Extract center hexagon
-        vert_xyz_center = vert_xyz[0, :6, :]
-        z_center = np.average(vert_xyz_center[:, 2])
-
-        # Determine coordinates at theta_M0
-        vert_xyz0 = self.solve_geo_1orbit(theta_M=np.array([theta_M0, ]),
-                                          vtk_out=False, fig_out=False,
-                                          progbar_out=False)
-        # Extract outmost hexagon z coordiante
-        z0 = vert_xyz0[0, self.n_node_hex - 6:self.n_node_hex, 2]
-        z0 = 0.5 * (max(z0) + min(z0))
-        height0 = z_center - z0
-        if text_out:
-            print('  {0:<32s} : {1:<8f} (deg)'.format('Initial angle', np.degrees(theta_M0)))
-            print('  {0:<32s} : {1:<8f}'.format('Initial height', height0))
-
-        vert_xyz = self.solve_geo_1orbit(theta_M=theta_M,
-                                         vtk_out=False, fig_out=False,
-                                         progbar_out=False)
-        zz = vert_xyz[:, self.n_node_hex - 6:self.n_node_hex, 2]
-        height = z_center - 0.5 * (np.max(zz, axis=1) + np.min(zz, axis=1))
-        disp = height0 - height
-
-        # Save lookup table
-        # if save_lookuptab:
-        #     print(' Save lookup table')
-        #     fpath = './lookuptable/theta_MKJS.csv'
-        #     file_exists = os.path.exists(fpath)
-        #     if file_exists:
-        #         with open(fpath, 'r') as fp:
-        #             for count, line in enumerate(fp):
-        #                 pass
-        #         count = count + 1
-        #         file_stat = os.stat(fpath)
-        #         if file_stat.st_size >= 1e3 and file_stat.st_size < 1e6:
-        #             fsize = file_stat.st_size * 1e-3
-        #             funit = 'KB'
-        #         elif file_stat.st_size >= 1e6:
-        #             fsize = file_stat.st_size * 1e-6
-        #             funit = 'MB'
-        #         else:
-        #             fsize = file_stat.st_size
-        #             funit = 'B'
-        #         print('  ! File already exists ({0:d} lines; {1:.2f} {2:2s}) !'.format(count, fsize, funit))
-        #         value = input('  Overwrite ? [Press Y to overwrite, press elsewhere otherwise]\n')
-        #         if value == 'Y' or value == 'y':
-        #             print('   Saving lookup table...')
-        #             data = np.stack((theta_M, theta_K, theta_J, theta_S), axis=-1)
-        #             np.savetxt(fpath, data, delimiter=',')
-        #             print('    ...Saved')
-        #         else:
-        #             print('   File not saved.')
-        #             pass
-        #     else:
-        #         print('   Saving lookup table...')
-        #         data = np.stack((theta_M, theta_K, theta_J, theta_S), axis=-1)
-        #         np.savetxt(fpath, data, delimiter=',')
-        #         print('    ...Saved')
-
-        if fig_out:
-            plt.figure('angle-displacement')
-            plt.plot(np.degrees(theta_M), disp, label='Displacement $u$')
-            plt.plot(np.degrees(theta_M), height, label='Height $h$')
-            plt.xlabel('$\\theta_M$')
-            plt.ylabel('$u$, $h$')
-
-        return disp, height
-
-    def angl2height(self, theta_M):
-        _, height = self.angl2disp(0.0, theta_M, fig_out=False, text_out=False)
-
-        return -height
-
-    def identify_criticalFoldAngle(self,):
-        x0 = 0.25 * np.pi
-        bnds = ((0, 0.5 * np.pi),)
-        options = {'xatol': 1e-8, 'fatol': 1e-8}
-        options = {'disp': None,
-                   'maxcor': 20,
-                   'ftol': 1e-9,
-                   'gtol': 1e-8,
-                   'eps': 1e-8, }
-        soln = optimize.minimize(self.angl2height, x0, bounds=bnds, options=options)
-        angl_cr = soln.x[0]
-
-        print(' {0:s} {1:.12f} (deg) = {2:.12f} (rad)'.format('Critical fold angle (thM) is', np.degrees(angl_cr), angl_cr))
-
-        return angl_cr
-
-    def angl2height_res(self, theta_M, h0):
-        _, height = self.angl2disp(0.0, theta_M, fig_out=False, text_out=False)
-
-        return height - h0
-
-    def height2angl(self, h0: float, angl_cr: float = 0.74688906):
-        x01 = angl_cr * 0.8
-        x02 = angl_cr * 1.2
-        soln1 = optimize.root(self.angl2height_res, x0=x01, args=(h0))
-        soln2 = optimize.root(self.angl2height_res, x0=x02, args=(h0))
-        angl_cr1 = soln1.x[0]
-        angl_cr2 = soln2.x[0]
-
-        print(' (h0={0:3.2e}) Fold angle (thM) is {1:.12f} (deg) and {2:.12f} (deg)'.format(h0, np.degrees(angl_cr1), np.degrees(angl_cr2)))
-        print('                                   {0:.12f} (rad) and {1:.12f} (rad)'.format(angl_cr1, angl_cr2))
-
-        return angl_cr1, angl_cr2
-
-    def analyze_potentialEnergy(self, theta_M0, theta_M,
-                                ksp_tor: float = 1,
-                                fig_out: bool = True):
-        self.ksp_tor = ksp_tor  # torsion spring constant (units:N*m/rad)
-
-        # Import fold angles
-        data_th = np.genfromtxt('./lookuptable/theta_MKJS.csv', delimiter=',')
-        theta_Mcsv = data_th[:, 0]
-        theta_K = data_th[:, 1]
-        theta_J = data_th[:, 2]
-        theta_S = data_th[:, 3]
-        f_MK = interpolate.interp1d(theta_Mcsv, theta_K, kind='cubic')
-        f_MJ = interpolate.interp1d(theta_Mcsv, theta_J, kind='cubic')
-        f_MS = interpolate.interp1d(theta_Mcsv, theta_S, kind='cubic')
-
-        theta_K0 = f_MK(theta_M0)
-        theta_J0 = f_MJ(theta_M0)
-        theta_S0 = f_MS(theta_M0)
-
-        theta_K = f_MK(theta_M)
-        theta_J = f_MJ(theta_M)
-        theta_S = f_MS(theta_M)
-
-        self.n_tor_thM = 24
-        self.n_tor_thS = 18
-        self.n_tor_thJ = 12
-        self.n_tor_thK = 24
-
-        pe_thM = 0.5 * self.Lc * self.n_tor_thM * (2 * theta_M - 2 * theta_M0)**2
-        pe_thS = 0.5 * self.Lb * self.n_tor_thS * (2 * theta_S - 2 * theta_S0)**2
-        pe_thJ = 0.5 * self.La * self.n_tor_thJ * (theta_J - theta_J0)**2
-        pe_thK = 0.5 * self.La * self.n_tor_thK * (2 * theta_K - 2 * theta_K0)**2
-
-        pe_total = self.ksp_tor * (pe_thM + pe_thS + pe_thJ + pe_thK)
-
-        disp, _ = self.angl2disp(theta_M0, theta_M, fig_out=False, text_out=False)
-
-        if fig_out:
-            plt.figure('Potential energy (thetaM, normalized)')
-            plt.plot(np.degrees(theta_M), pe_total)
-            plt.xlabel('$\\theta_M$ (deg)')
-            plt.ylabel('Potential energy $U$')
-
-            plt.figure('Potential energy (displacement, normalized)')
-            plt.plot(disp * 1e3, pe_total)
-            plt.xlabel('Displacement $u$ (mm)')
-            plt.ylabel('Potential energy $U$')
-
-        return pe_total
-
-    def analyze_force_displacement(self, theta_M0, theta_M,
-                                   ksp_tor: float = 1,
-                                   fig_out: bool = True,
-                                   save_lookuptab: bool = False,
-                                   ):
-
-        self.ksp_tor = ksp_tor  # torsion spring constant (units:N*m/rad)
-        pe_total = self.analyze_potentialEnergy(theta_M0, theta_M,
-                                                ksp_tor,
-                                                fig_out)
-
-        disp, _ = self.angl2disp(theta_M0, theta_M, fig_out=False, text_out=False)
-
-        forc_disp = np.gradient(pe_total, disp, edge_order=2)
-        forc_angl = np.gradient(pe_total, theta_M, edge_order=2)
-        # pe_thM = np.gradient(pe_total, theta_M, edge_order=2)
-        thM_u = np.gradient(theta_M, disp, edge_order=2)
-        # forc_disp = pe_thM * thM_u
-
-        forc_disp = forc_disp / (ksp_tor * self.La)
-
-        if save_lookuptab:
-            print(' Save lookup table')
-            fpath = './lookuptable/forc_disp_angl.csv'
-            file_exists = os.path.exists(fpath)
-            if file_exists:
-                with open(fpath, 'r') as fp:
-                    for count, line in enumerate(fp):
-                        pass
-                count = count + 1
-                file_stat = os.stat(fpath)
-                if file_stat.st_size >= 1e3 and file_stat.st_size < 1e6:
-                    fsize = file_stat.st_size * 1e-3
-                    funit = 'KB'
-                elif file_stat.st_size >= 1e6:
-                    fsize = file_stat.st_size * 1e-6
-                    funit = 'MB'
-                else:
-                    fsize = file_stat.st_size
-                    funit = 'B'
-                print('  ! File already exists ({0:d} lines; {1:.2f} {2:2s}) !'.format(count, fsize, funit))
-                value = input('  Overwrite ? [Press Y to overwrite, press elsewhere otherwise]\n')
-                if value == 'Y' or value == 'y':
-                    print('   Saving lookup table...')
-                    data = np.stack((forc_disp, disp, forc_angl, theta_M), axis=-1)
-                    np.savetxt(fpath, data, delimiter=',')
-                    print('    ...Saved')
-                else:
-                    print('   File not saved.')
-                    pass
-            else:
-                print('   Saving lookup table...')
-                data = np.stack((forc_disp, disp, forc_angl, theta_M), axis=-1)
-                np.savetxt(fpath, data, delimiter=',')
-                print('    ...Saved')
-
-        if fig_out:
-            plt.figure('Force-angle (normalized)')
-            plt.plot(np.degrees(theta_M), forc_angl)
-            plt.xlabel('$\\theta_M$ (deg)')
-            plt.ylabel('Force $F$')
-
-            plt.figure('Force-displacement (normalized)')
-            plt.plot(disp, forc_disp)
-            plt.xlabel('Displacement $u$ (m)')
-            plt.ylabel('Force $F/(k_0a_0)$')
-
-            plt.figure('Angle-displacement')
-            plt.plot(disp * 1e3, np.degrees(theta_M))
-            plt.xlabel('Displacement $u$ (mm)')
-            plt.ylabel('Angle $\\theta_M$ (deg)')
-
-            plt.figure('Angle-displacement slope')
-            plt.plot(disp * 1e3, thM_u)
-            plt.xlabel('Displacement $u$ (mm)')
-            plt.ylabel('Angle gradient $d\\theta_M/du$ (deg/m)')
-
-        return disp, forc_disp
-
-    def estimate_stiffness(self,):
 
         return
 
