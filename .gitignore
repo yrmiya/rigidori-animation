@@ -8,3 +8,7 @@
 *.vtk
 *.zip
 .vscode
+!example/*
+*.build
+*.dist
+*.onefile-build
