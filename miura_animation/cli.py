@@ -16,8 +16,8 @@ def main():
     parser.add_argument('-nbin', '--nbin', help='Number of steps', type=int, default=64)
     parser.add_argument('-th0', '--theta0', help='Initial fold angle (float, default=0 deg)', type=float, default=0.0)
     parser.add_argument('-thf', '--thetaf', help='Final fold angle (float, default=90 deg)', type=float, default=90.0)
-    parser.add_argument('-zip', '--savezip', help='Option to compress vtk files into zip file (True|False, default=False)', type=bool, default=False)
-    parser.add_argument('-fig', '--figout', help='Option to display plots (True|False, default=False)', type=bool, default=False)
+    parser.add_argument('-zip', '--savezip', help='Option flag to compress vtk files into zip file', action='store_true')
+    parser.add_argument('-fig', '--figout', help='Option flag to display plots', action='store_true')
 
     args = parser.parse_args()
     La = args.lengtha

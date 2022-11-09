@@ -44,3 +44,20 @@ List of arguments can also be found by
 ```sh
 python -m miura_animation -h
 ```
+
+### Hexagonal-triangular Resch animation
+
+In root directory of the project, run
+
+```sh
+python -m resch_animation
+```
+
+Without arguments, the code generates single unit Miura-ori animation.
+To define geometry, use the following options.
+
+List of arguments can also be found by
+
+```sh
+python -m resch_animation -h
+```
