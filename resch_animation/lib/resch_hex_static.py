@@ -53,7 +53,7 @@ class ReschOrigamiAnalysis:
         n_node_hex = int(6 * n_hex)
         n_node_hex_origin = int(n_hex)
         n_node_tri = int(6 * (n_orbit + n_orbit**2))
-        n_node = n_node_hex + n_node_tri + n_node_hex_origin
+        n_node = n_node_hex + n_node_tri  # + n_node_hex_origin
         n_edge_hex = int(6 * n_hex)
         n_edge_tri = int(7 * n_node_tri)
         n_edge = n_edge_hex + n_edge_tri
@@ -198,17 +198,40 @@ class ReschOrigamiAnalysis:
         for i in range(self.n_poly_hex):
             Polyg_hex[i, :] = np.arange(6 * i, 6 * (i + 1), dtype=int)
 
+        # Define edge connectivity
+        iter = 0
+        # Hexagon
+        for ip in range(self.n_poly_hex):
+            for ii in range(6):
+                EdgeConct[iter, :] = np.sort([Polyg_hex[ip, ii - 1], Polyg_hex[ip, ii]])
+                iter = iter + 1
+
+        # Triangle
+        for ip in range(self.n_poly_tri):
+            for ii in range(3):
+                idx = np.sort([Polyg_tri[ip, ii - 1], Polyg_tri[ip, ii]])
+                idx_test = np.prod(np.isin(EdgeConct[:iter, :], idx), axis=1, dtype=bool)
+                if idx_test.any():
+                    pass
+                else:
+                    EdgeConct[iter, :] = idx
+                    iter = iter + 1
+
         self.Polyg_tri = Polyg_tri
         self.Polyg_hex = Polyg_hex
         self.n_poly_tri = n_tri
         self.n_poly_hex = n_hex
 
+        self.EdgeConct = EdgeConct
+
         theta_M = np.array([theta_M0, ])
         vert_xyz = self.solve_geo_1orbit(theta_M=theta_M, vtk_out=False, fig_out=False)
 
-        self.Polyg = np.zeros((self.n_poly, 6), dtype=int)
-        self.Polyg[:self.n_poly_hex, :] = Polyg_hex
-        # self.Polyg[self.n_poly_hex:, :3] = Polyg_tri
+        self.Polyg = np.zeros((self.n_poly), dtype=object)
+        for i in range(self.n_poly_hex):
+            self.Polyg[i] = Polyg_hex[i, :]
+        for i in range(self.n_poly_tri):
+            self.Polyg[self.n_poly_hex + i] = Polyg_tri[i, :]
 
         return vert_xyz, EdgeConct, Polyg_tri, Polyg_hex, PolygAdj, Polyg2Edge
 
@@ -481,16 +504,6 @@ class ReschOrigamiAnalysis:
 
         niter = len(theta_M)
 
-        # Import fold angles
-        # data_th = np.genfromtxt('./lookuptable/theta_MKJS.csv', delimiter=',')
-        # theta_Mcsv = data_th[:, 0]
-        # theta_K = data_th[:, 1]
-        # theta_J = data_th[:, 2]
-        # theta_S = data_th[:, 3]
-        # f_MK = interpolate.interp1d(theta_Mcsv, theta_K, kind='cubic')
-        # f_MJ = interpolate.interp1d(theta_Mcsv, theta_J, kind='cubic')
-        # f_MS = interpolate.interp1d(theta_Mcsv, theta_S, kind='cubic')
-
         theta_J = self.f_MJ(theta_M)
 
         A_global = np.zeros((42, 3))
@@ -597,19 +610,18 @@ class ReschOrigamiAnalysis:
 
         fig, ax = plt.subplots(1, 3, num='xy projection %s' % (figname), figsize=(18, 6))
         # xy plane
-        # for i in range(self.n_node):
-        for i in range(6):
+        for i in range(self.n_node):
             ax[0].scatter(vert_xyz[i, 0], vert_xyz[i, 1], s=80, zorder=2,)
-        # for i in range(self.n_edge):
-        #     ax[0].plot(vert_xyz[self.EdgeConct[i, :], 0],
-        #                vert_xyz[self.EdgeConct[i, :], 1],
-        #                color='#444444',
-        #                linewidth=2,
-        #                zorder=1,
-        #                )
+        for i in range(self.n_edge):
+            ax[0].plot(vert_xyz[self.EdgeConct[i, :], 0],
+                       vert_xyz[self.EdgeConct[i, :], 1],
+                       color='#444444',
+                       linewidth=2,
+                       zorder=1,
+                       )
         for i in range(self.n_poly):
-            ax[0].fill(vert_xyz[self.Polyg[i, :], 0],
-                       vert_xyz[self.Polyg[i, :], 1],
+            ax[0].fill(vert_xyz[self.Polyg[i][:], 0],
+                       vert_xyz[self.Polyg[i][:], 1],
                        #    color='#444444',
                        alpha=0.2,
                        linewidth=2,
@@ -621,16 +633,16 @@ class ReschOrigamiAnalysis:
         # xz plane
         for i in range(self.n_node):
             ax[1].scatter(vert_xyz[i, 0], vert_xyz[i, 2], s=80, zorder=2,)
-        # for i in range(self.n_edge):
-        #     ax[1].plot(vert_xyz[self.EdgeConct[i, :], 0],
-        #                vert_xyz[self.EdgeConct[i, :], 2],
-        #                color='#444444',
-        #                linewidth=2,
-        #                zorder=1,
-        #                )
+        for i in range(self.n_edge):
+            ax[1].plot(vert_xyz[self.EdgeConct[i, :], 0],
+                       vert_xyz[self.EdgeConct[i, :], 2],
+                       color='#444444',
+                       linewidth=2,
+                       zorder=1,
+                       )
         for i in range(self.n_poly):
-            ax[1].fill(vert_xyz[self.Polyg[i, :], 0],
-                       vert_xyz[self.Polyg[i, :], 2],
+            ax[1].fill(vert_xyz[self.Polyg[i][:], 0],
+                       vert_xyz[self.Polyg[i][:], 2],
                        #    color='#444444',
                        alpha=0.2,
                        linewidth=2,
@@ -642,16 +654,16 @@ class ReschOrigamiAnalysis:
         # yz plane
         for i in range(self.n_node):
             ax[2].scatter(vert_xyz[i, 1], vert_xyz[i, 2], s=80, zorder=2,)
-        # for i in range(self.n_edge):
-        #     ax[2].plot(vert_xyz[self.EdgeConct[i, :], 1],
-        #                vert_xyz[self.EdgeConct[i, :], 2],
-        #                color='#444444',
-        #                linewidth=2,
-        #                zorder=1,
-        #                )
+        for i in range(self.n_edge):
+            ax[2].plot(vert_xyz[self.EdgeConct[i, :], 1],
+                       vert_xyz[self.EdgeConct[i, :], 2],
+                       color='#444444',
+                       linewidth=2,
+                       zorder=1,
+                       )
         for i in range(self.n_poly):
-            ax[2].fill(vert_xyz[self.Polyg[i, :], 1],
-                       vert_xyz[self.Polyg[i, :], 2],
+            ax[2].fill(vert_xyz[self.Polyg[i][:], 1],
+                       vert_xyz[self.Polyg[i][:], 2],
                        #    color='#444444',
                        alpha=0.2,
                        linewidth=2,
