@@ -23,7 +23,7 @@ The current version supports:
   - tqdm
 - ParaView 5.8 (Download from [here](https://www.paraview.org/download/). The latest version is 5.11, but runs slow on laptop and requires powerful machine)
 
-## Python installation
+## Install Python
 
 ### Installation with installer
 
@@ -37,7 +37,7 @@ python --version
 
 Make sure that it returns Python 3.10.\*.
 
-### Installing packages
+### Install required packages
 
 To install packages, run
 
@@ -70,5 +70,5 @@ for optional arguments.
 
 ## Author
 
-- Yasuhiro Miyazawa (LEMS, Dept. of Aero. & Astro., UW)
-- Ted Chang (LEMS, Dept. of Aero. & Astro., UW)
+- Yasuhiro Miyazawa (Dept. of Aero. & Astro., UW)
+- Ted Chang (Dept. of Aero. & Astro., UW)
