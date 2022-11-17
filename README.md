@@ -23,28 +23,6 @@ The current version supports:
   - tqdm
 - ParaView 5.8 (Download from [here](https://www.paraview.org/download/). The latest version is 5.11, but runs slow on laptop and requires powerful machine)
 
-## Install Python
-
-### Installation with installer
-
-Download installer from [Python official website](https://www.python.org/downloads/release/python-3108/), and run installer.
-
-After installation, open terminal (PowerShell for Windows, Terminal for Mac and Linux) and run
-
-```sh
-python --version
-```
-
-Make sure that it returns Python 3.10.\*.
-
-### Install required packages
-
-To install packages, run
-
-```sh
-python -m pip numpy matplotlib scipy tqdm PyQt5
-```
-
 ## List of packages
 
 - rigidori_animation: Exports animation of selected rigid origami
@@ -67,6 +45,39 @@ python -m resch_animation -h
 ```
 
 for optional arguments.
+
+## Setting up environment
+
+### Install Python
+
+There are several different ways to install Python (for Mac and Linux, Python might be pre-installed and comes with OS).
+
+1. Install with installer ([Python official website](https://www.python.org/downloads/release/python-3108/))
+2. Install with Python distribution (e.g., [Anaconda](https://www.anaconda.com/products/distribution))
+3. Install with package manager (e.g., homebrew for Mac, apt for Debian/Ubuntu)
+4. Install with version control tool (e.g., [pyenv](https://github.com/pyenv/pyenv))
+
+After installation, open terminal (PowerShell for Windows, Terminal for Mac and Linux) and run
+
+```sh
+python --version
+```
+
+Make sure that it returns Python 3.10.\*.
+
+### Install required packages
+
+To install packages, with pip
+
+```sh
+python -m pip install numpy matplotlib scipy tqdm PyQt5
+```
+
+and with Anaconda, either use GUI or
+
+```sh
+conda install numpy matplotlib scipy tqdm PyQt5
+```
 
 ## Author
 
