@@ -47,7 +47,7 @@ python -m pip numpy matplotlib scipy tqdm PyQt5
 
 ## List of packages
 
-- rigidori_animation: Exports animation of the single-orbit hexagonal-triangular Resch origami
+- rigidori_animation: Exports animation of selected rigid origami
 
 ## Usage
 
