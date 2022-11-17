@@ -14,6 +14,10 @@ The current version supports:
 
 [origami]: img/origami.png "Supported origami types"
 
+## List of packages
+
+- rigidori_animation: Exports animation of selected rigid origami
+
 ## Requirements
 
 - Python 3.10.x
@@ -22,10 +26,6 @@ The current version supports:
   - SciPy
   - tqdm
 - ParaView 5.8 (Download from [here](https://www.paraview.org/download/). The latest version is 5.11, but runs slow on laptop and requires powerful machine)
-
-## List of packages
-
-- rigidori_animation: Exports animation of selected rigid origami
 
 ## Usage
 
