@@ -14,8 +14,6 @@ The current version supports:
 
 [origami]: img/origami.png "Supported origami types"
 
-[TOC]
-
 ## Requirements
 
 - Python 3.10.x
