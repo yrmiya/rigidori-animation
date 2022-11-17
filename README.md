@@ -1,7 +1,6 @@
 # Rigid Origami Animation Tool
 
-![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/yrmiya/rigidori-animation?color=0033&include_prereleases&sort=semver)
-![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/yrmiya/rigidori-animation?color=%23886666&label=pre-release&sort=semver)
+[![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/yrmiya/rigidori-animation?color=0033&include_prereleases&sort=semver)](https://github.com/yrmiya/rigidori-animation/releases/latest)
 
 The repository contains a package to create vtk files for rigid origami animation.
 
