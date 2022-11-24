@@ -79,7 +79,13 @@ To install packages, with pip
 python -m pip install numpy matplotlib scipy tqdm PyQt5
 ```
 
-and with Anaconda, either use GUI or
+or
+
+```sh
+python3 -m pip install numpy matplotlib scipy tqdm PyQt5
+```
+
+With Anaconda, either use GUI or
 
 ```sh
 conda install numpy matplotlib scipy tqdm PyQt5
