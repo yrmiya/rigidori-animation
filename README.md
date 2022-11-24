@@ -35,6 +35,12 @@ In root directory of the project, run with origami type specified (ori_type), e.
 python -m rigidori_animation --ori_type miura
 ```
 
+or
+
+```sh
+python3 -m rigidori_animation --ori_type miura
+```
+
 For single crease fold and Resch, give "crease" and "resch", respectively, instead of "miura".
 
 Without other arguments, the code will generate vtk files with default parameters.
@@ -42,6 +48,12 @@ To define geometry, number of data points, and other options, see
 
 ```sh
 python -m rigidori_animation -h
+```
+
+or
+
+```sh
+python3 -m rigidori_animation -h
 ```
 
 for optional arguments.
