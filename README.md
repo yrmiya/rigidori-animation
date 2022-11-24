@@ -57,10 +57,16 @@ There are several different ways to install Python (for Mac and Linux, Python mi
 3. Install with package manager (e.g., homebrew for Mac, apt for Debian/Ubuntu)
 4. Install with version control tool (e.g., [pyenv](https://github.com/pyenv/pyenv))
 
-After installation, open terminal (PowerShell for Windows, Terminal for Mac and Linux) and run
+After installation, open terminal (e.g., PowerShell for Windows, Terminal for Mac and Linux) and run
 
 ```sh
 python --version
+```
+
+or
+
+```sh
+python3 --version
 ```
 
 Make sure that it returns Python 3.10.\*.
