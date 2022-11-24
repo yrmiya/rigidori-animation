@@ -1,33 +1,72 @@
 def main():
-    import numpy as np
-    import matplotlib.pyplot as plt
-    plt.style.use('./common/custom.mplstyle')  # Relative to root directory
-
     import argparse
 
     parser = argparse.ArgumentParser(prog='rigidori_animation', description='')
-    parser.add_argument('-ori', '--ori_type', help='Type of origami (crease|miura|resch)',
-                        choices=['crease', 'miura', 'resch'],
-                        type=str, required=True)
+
+    subparsers = parser.add_subparsers(help='Sub-commands')
+    parser_main = subparsers.add_parser('run', help='Execute tool')
+    parser_main.set_defaults(handler=default_run)
+    parser_clean = subparsers.add_parser('clean', help='Remove previous results')
+    parser_clean.set_defaults(handler=clean_all)
+
+    parser_main.add_argument('-ori', '--ori_type', help='Type of origami (crease|miura|resch)',
+                             choices=['crease', 'miura', 'resch', 'startuck'],
+                             type=str, required=True)
     # Universal arguments
-    parser.add_argument('-la', '--lengtha', help='Side length of crease "a" (float, default=1.0)', type=float, default=1.0)
-    parser.add_argument('-nbin', '--nbin', help='Number of steps', type=int, default=64)
-    parser.add_argument('-th0', '--theta0', help='Initial fold angle (float, default=0 deg)', type=float, default=0.0)
-    parser.add_argument('-thf', '--thetaf', help='Final fold angle (float, default=90 deg)', type=float, default=90.0)
-    parser.add_argument('-zip', '--savezip', help='Option flag to compress vtk files into zip file', action='store_true')
-    parser.add_argument('-fig', '--figout', help='Option flag to display plots', action='store_true')
+    parser_main.add_argument('-la', '--lengtha', help='Side length of crease "a" (float, default=1.0)', type=float, default=1.0)
+    parser_main.add_argument('-nbin', '--nbin', help='Number of steps', type=int, default=64)
+    parser_main.add_argument('-th0', '--theta0', help='Initial fold angle (float, default=0 deg)', type=float, default=0.0)
+    parser_main.add_argument('-thf', '--thetaf', help='Final fold angle (float, default=90 deg)', type=float, default=90.0)
+    parser_main.add_argument('-zip', '--savezip', help='Option flag to compress vtk files into zip file', action='store_true')
+    parser_main.add_argument('-fig', '--figout', help='Option flag to display plots', action='store_true')
+    parser_main.add_argument('-clean', '--clean', help='Option flag to remove vtk files after creating zip file', action='store_true')
     # Unique to miura ori
-    group_miura = parser.add_argument_group('Miura-ori', 'Unique to Miura-ori')
+    group_miura = parser_main.add_argument_group('Miura-ori', 'Unique to Miura-ori')
     group_miura.add_argument('-lb', '--lengthb', help='Side length of crease "b" (float, default=1.0)', type=float, default=1.0)
     group_miura.add_argument('-ld', '--lengthd', help='Side length of crease "d" (float, default=1.0)', type=float, default=1.0)
     group_miura.add_argument('-alpha', '--alpha', help='Apex angle "alpha" (float, default=60 deg)', type=float, default=60.0)
     # Unique to resch
-    group_resch = parser.add_argument_group('Resch-patterned origami', 'Unique to Resch-patterned origami')
+    group_resch = parser_main.add_argument_group('Resch-patterned origami', 'Unique to Resch-patterned origami')
     group_resch.add_argument('-lkup', '--lookuptab',
                              help='Option flag to use lookup table instead of solving fold angle',
                              action='store_false')
+    # Unique to startuck
+    group_star = parser_main.add_argument_group('Startuck fold', 'Unique to Startuck fold')
+    group_star.add_argument('-st_type', '--startuck_type',
+                            help='Startuck profile',
+                            choices=['tri'],
+                            type=str,
+                            default='tri')
 
     args = parser.parse_args()
+    if hasattr(args, "handler"):
+        args.handler(args)
+    else:
+        parser.print_help()
+
+    return
+
+
+def clean_all(args):
+    import glob
+    import os
+    import shutil
+    fpath = './vtk_*'
+    dfile = glob.glob(fpath)
+    if len(dfile) > 0:
+        for i in range(len(dfile)):
+            shutil.rmtree(path=dfile[i])
+        print('Cleaned all previous results')
+    else:
+        print('No previous results to remove')
+    return
+
+
+def default_run(args):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    plt.style.use('./common/custom.mplstyle')  # Relative to root directory
+
     ori_type = args.ori_type
     La = args.lengtha
     nbin = args.nbin
@@ -35,13 +74,17 @@ def main():
     thetaf = np.radians(args.thetaf)
     fig_out = args.figout
     save_zip = args.savezip
+    clean_vtk = args.clean
 
     theta_M = np.linspace(theta0, thetaf, nbin)
 
     match ori_type:
         case 'crease':
+            dir_save = './vtk_singlecrease'
+            fname_vtk = 'singlecrease'
+
             from .lib.singlecrease import SingleCreaseAnalysis
-            sca = SingleCreaseAnalysis()
+            sca = SingleCreaseAnalysis(dir_save, fname_vtk)
             sca.geo_init_simplefold(La=La, theta_M0=theta_M[0], fig_out=fig_out)
             sca.create_3Dmodel_simplefold(theta_M, save_zip=save_zip)
 
@@ -49,8 +92,12 @@ def main():
             Lb = args.lengthb
             Ld = args.lengthb
             alpha = np.radians(args.alpha)
+
+            dir_save = './vtk_miura'
+            fname_vtk = 'miura'
+
             from .lib.miuraori import MiuraOriAnalysis
-            moa = MiuraOriAnalysis()
+            moa = MiuraOriAnalysis(dir_save, fname_vtk)
 
             moa.geo_init_miura(La=La, Lb=Lb, Ld=Ld,
                                alpha=alpha,
@@ -61,8 +108,12 @@ def main():
                                save_zip=save_zip)
         case 'resch':
             use_lookuptab = args.lookuptab
+
+            dir_save = './vtk_resch63_1orbit'
+            fname_vtk = 'resch63_1orbit'
+
             from .lib.resch_hex import ReschOrigamiAnalysis
-            roa = ReschOrigamiAnalysis()
+            roa = ReschOrigamiAnalysis(dir_save, fname_vtk)
 
             if use_lookuptab:
                 theta_MKJS = None
@@ -84,6 +135,21 @@ def main():
                                  fig_out=fig_out,
                                  save_zip=save_zip)
 
-    plt.show()
+        case 'startuck':
+            st_type = args.startuck_type
+            from .lib.startuck import StartuckAnalysisTool
+            star = StartuckAnalysisTool()
 
+            star.geo_init_startuck(La=La,
+                                   theta_M0=theta_M[0],
+                                   st_type=st_type,
+                                   fig_out=fig_out)
+
+            star.create_3Dmodel(theta_M=theta_M, save_zip=save_zip)
+
+    if save_zip and clean_vtk:
+        import shutil
+        shutil.rmtree(path=dir_save)
+
+    plt.show()
     return
