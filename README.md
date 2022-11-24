@@ -9,6 +9,7 @@ The current version supports:
 - Single crease fold (a)
 - Miura-ori (b)
 - Single-orbit Hexagonal-triangular Resch (c)
+- Triangular startuck (d)
 
 ![Supported origami types][origami]
 
@@ -29,16 +30,18 @@ The current version supports:
 
 ## Usage
 
+### Generate 3D object file
+
 In root directory of the project, run with origami type specified (ori_type), e.g., for Miura-ori,
 
 ```sh
-python -m rigidori_animation --ori_type miura
+python -m rigidori_animation run --ori_type miura
 ```
 
 or
 
 ```sh
-python3 -m rigidori_animation --ori_type miura
+python3 -m rigidori_animation run --ori_type miura
 ```
 
 For single crease fold and Resch, give "crease" and "resch", respectively, instead of "miura".
@@ -47,16 +50,30 @@ Without other arguments, the code will generate vtk files with default parameter
 To define geometry, number of data points, and other options, see
 
 ```sh
-python -m rigidori_animation -h
+python -m rigidori_animation run -h
 ```
 
 or
 
 ```sh
-python3 -m rigidori_animation -h
+python3 -m rigidori_animation run -h
 ```
 
 for optional arguments.
+
+### Clean previous results
+
+To clean all previous results in the root directory, run
+
+```sh
+python -m rigidori_animation clean
+```
+
+or
+
+```sh
+python3 -m rigidori_animation clean
+```
 
 ## Setting up environment
 
