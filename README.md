@@ -41,7 +41,7 @@ Without other arguments, the code will generate vtk files with default parameter
 To define geometry, number of data points, and other options, see
 
 ```sh
-python -m resch_animation -h
+python -m rigidori_animation -h
 ```
 
 for optional arguments.
