@@ -30,9 +30,9 @@ The current version supports:
 
 ## Usage
 
-### Generate 3D object file
+### Generate 3D geometry file
 
-In root directory of the project, run with origami type specified (ori_type), e.g., for Miura-ori,
+In root directory of the project, run the program with origami type specified (ori_type), e.g., for Miura-ori,
 
 ```sh
 python -m rigidori_animation run --ori_type miura
@@ -44,9 +44,9 @@ or
 python3 -m rigidori_animation run --ori_type miura
 ```
 
-For single crease fold and Resch, give "crease" and "resch", respectively, instead of "miura".
+For single crease fold, Resch, and startuck, give "crease", "resch", and "startuck" respectively, instead of "miura".
 
-Without other arguments, the code will generate vtk files with default parameters.
+Without other arguments, the program generates vtk files with default parameters.
 To define geometry, number of data points, and other options, see
 
 ```sh
@@ -59,11 +59,9 @@ or
 python3 -m rigidori_animation run -h
 ```
 
-for optional arguments.
-
 ### Clean previous results
 
-To clean all previous results in the root directory, run
+To clean all previous results (`vtk_*/` directories and zip files) in the root directory, run
 
 ```sh
 python -m rigidori_animation clean
@@ -112,6 +110,12 @@ or
 
 ```sh
 python3 -m pip install numpy matplotlib scipy tqdm PyQt5
+```
+
+If the environmental path and alias are set for `pip`, simply
+
+```sh
+pip install numpy matplotlib scipy tqdm PyQt5
 ```
 
 With Anaconda, either use GUI or
