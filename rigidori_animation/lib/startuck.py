@@ -181,6 +181,63 @@ class StartuckAnalysisTool:
 
         return vert_xyz
 
+    def find_geo_unit(self, theta_M: float | npt.ArrayLike,
+                      theta_K: float | npt.ArrayLike):
+
+        vert_xyz = np.zeros((self.n_node + 2, 3))
+        rotTz180 = self.calc_rotationMatrix_Z(np.pi)
+        vert_xyz0 = self.find_geo_triangle(theta_M)
+        vert_xyz0 = vert_xyz0[:self.n_node // 2, :]
+        vert_xyz1 = np.zeros((self.n_node // 2, 3))
+        vert_xyz2 = np.zeros((2, 3))
+        for i in range(self.n_node // 2):
+            vert_xyz1[i, :] = rotTz180 @ vert_xyz0[i, :]
+
+        # Fix tilt
+        vec1 = vert_xyz0[2, :] - vert_xyz0[1, :]
+        vec2 = vert_xyz1[1, :] - vert_xyz1[2, :]
+        vec = np.cross(vec2, vec1)
+        matV = np.array([[0, -vec[2], vec[1]], [vec[2], 0, -vec[0]], [-vec[1], vec[0], 0]])
+        rotR = np.identity(3) + matV + (matV @ matV) * (1. / (1. + np.dot(vec1, vec2)))
+        for i in range(self.n_node // 2):
+            vert_xyz1[i, :] = rotR @ vert_xyz1[i, :]
+
+        # Rotate for theta_K
+        vec_k = vert_xyz0[2, :] - vert_xyz0[1, :]
+        vec1 = vert_xyz0[1, :] - vert_xyz0[0, :]
+        vec2 = vert_xyz1[1, :] - vert_xyz1[0, :]
+        theta_K0 = np.emath.arccos(np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))).real
+        th = 2. * theta_K - theta_K0
+        rotRodrig = self.calc_rotationMatrix_rodrig(vec_k, th)
+        for i in range(self.n_node // 2):
+            vert_xyz1[i, :] = rotRodrig @ vert_xyz1[i, :]
+
+        # Translate
+        vec_trans1 = vert_xyz1[2, :] - vert_xyz0[1, :]
+        vec_trans2 = vert_xyz1[1, :] - vert_xyz0[2, :]
+        vec_trans = -0.5 * (vec_trans1 + vec_trans2)
+        transT = np.identity(4)
+        transT[:3, 3] = vec_trans
+        for i in range(self.n_node // 2):
+            temp = transT @ np.hstack((vert_xyz1[i, :], 1))
+            vert_xyz1[i, :] = temp[:3]
+
+        vert_xyz[:self.n_node // 2, :] = vert_xyz0
+        vert_xyz[self.n_node // 2:self.n_node, :] = vert_xyz1
+
+        # Hexagon on right
+        vec1 = vert_xyz[6, :] - vert_xyz[1, :]
+        vec2 = vert_xyz[10, :] - vert_xyz[9, :]
+        vec0 = (vec1 + vec2) / np.linalg.norm(vec1 + vec2)
+        vert_xyz[14, :] = vert_xyz[10, :] + self.La * vec0
+        # Hexagon on left
+        vec1 = vert_xyz[3, :] - vert_xyz[2, :]
+        vec2 = vert_xyz[13, :] - vert_xyz[8, :]
+        vec0 = (vec1 + vec2) / np.linalg.norm(vec1 + vec2)
+        vert_xyz[15, :] = vert_xyz[3, :] + self.La * vec0
+
+        return vert_xyz
+
     def calc_facet_area(self, vert_xyz: npt.ArrayLike):
         facet_area = np.zeros(self.n_poly)
         for ip in range(self.n_poly):
@@ -217,18 +274,38 @@ class StartuckAnalysisTool:
             for iv in range(num_points):
                 f.write("%.15e %.15e %.15e\n" % (vert_xyz[iv, 0], vert_xyz[iv, 1], vert_xyz[iv, 2]))
 
-            #   POLYGONS
-            num_dataset = self.n_poly
-            num_datanum = 4 * num_dataset
-            f.write('POLYGONS %d %d\n' % (num_dataset, num_datanum))
-            for ip in range(self.n_poly):
-                f.write('3 %d %d %d\n' % tuple(self.Polyg[ip, :]))
+                #   POLYGONS
+            match st_type:
+                case 'mono':
+                    num_dataset = self.n_poly
+                    num_datanum = 4 * num_dataset
+                    f.write('POLYGONS %d %d\n' % (num_dataset, num_datanum))
+                    for ip in range(self.n_poly):
+                        f.write('3 %d %d %d\n' % tuple(self.Polyg[ip, :]))
+                case 'bi':
+                    num_dataset = self.n_poly
+                    num_datanum = 4 * num_dataset
+                    f.write('POLYGONS %d %d\n' % (num_dataset + 2, num_datanum + 10))
+                    for ip in range(self.n_poly):
+                        f.write('3 %d %d %d\n' % tuple(self.Polyg[ip, :]))
+                    f.write('4 %d %d %d %d\n' % tuple([1, 6, 14, 10]))
+                    f.write('4 %d %d %d %d\n' % tuple([2, 3, 15, 13]))
 
-            f.write('CELL_DATA %d\n' % num_dataset)
-            f.write('SCALARS cell_scalars double\n')
-            f.write('LOOKUP_TABLE default\n')
-            for i in range(self.n_poly):
-                f.write('%.15e\n' % strain[i])
+            match st_type:
+                case 'mono':
+                    f.write('CELL_DATA %d\n' % num_dataset)
+                    f.write('SCALARS cell_scalars double\n')
+                    f.write('LOOKUP_TABLE default\n')
+                    for i in range(self.n_poly):
+                        f.write('%.15e\n' % strain[i])
+                case 'bi':
+                    f.write('CELL_DATA %d\n' % (num_dataset + 2))
+                    f.write('SCALARS cell_scalars double\n')
+                    f.write('LOOKUP_TABLE default\n')
+                    for i in range(self.n_poly):
+                        f.write('%.15e\n' % strain[i])
+                    f.write('%.15e\n' % (0.0))
+                    f.write('%.15e\n' % (0.0))
 
         return
 
@@ -246,11 +323,69 @@ class StartuckAnalysisTool:
             shutil.rmtree(self.dir_save)
         os.makedirs(self.dir_save)
         # Generate vtk file
+        from .vecmat.op_vecmat import calc_facet_area
         for ii in tqdm(range(niter)):
             vert_xyz = self.find_geo_triangle(theta_M[ii])
             # Dummy array for panel color
+            farea = calc_facet_area(vert_xyz=vert_xyz, Polyg=self.Polyg)
+            self.write_vtk(ii, vert_xyz, farea)
+
+        if save_zip:
+            zp = zipfile.ZipFile('%s.zip' % self.dir_save, 'w')
+            dfile = glob.glob('%s/*.vtk' % self.dir_save)
+            dfile = np.sort(dfile)
+            for i in range(len(dfile)):
+                zp.write(filename=dfile[i], arcname=None, compress_type=None, compresslevel=9)
+            zp.close()
+
+        return
+
+    def create_3Dmodel_unit(self, theta_M: list | np.ndarray,
+                            save_zip: bool = False):
+
+        # Import fold angles
+        data_th = np.genfromtxt('./lookuptable/theta_MKJS.csv', delimiter=',')
+        theta_Mcsv = data_th[:, 0]
+        theta_Kcsv = data_th[:, 1]
+        # theta_J = data_th[:, 2]
+        # theta_S = data_th[:, 3]
+        self.f_MK = interpolate.interp1d(theta_Mcsv, theta_Kcsv, kind='cubic')
+        # self.f_MJ = interpolate.interp1d(theta_M, theta_J, kind='cubic')
+        # self.f_MS = interpolate.interp1d(theta_M, theta_S, kind='cubic')
+
+        theta_K = self.f_MK(theta_M)
+
+        niter = len(theta_M)
+        # VTK export
+        self.dir_save = './vtk_bistartuck_{:s}'.format(self.st_profile)
+        self.fname_vtk = 'bistartuck_{:s}'.format(self.st_profile)
+        self.EdgeConct1 = np.zeros((2 * self.n_edge, 2), dtype=int)
+        self.Polyg1 = np.zeros((2 * self.n_poly, 3), dtype=int)
+        self.EdgeConct1[:self.n_edge, :] = self.EdgeConct
+        self.EdgeConct1[self.n_edge:, :] = self.EdgeConct + self.n_node
+        self.Polyg1[:self.n_poly, :] = self.Polyg
+        self.Polyg1[self.n_poly:2 * self.n_poly, :] = self.Polyg + self.n_node
+
+        # Update
+        self.EdgeConct = self.EdgeConct1
+        self.Polyg = self.Polyg1
+        self.n_node = 2 * self.n_node
+        self.n_edge = 2 * self.n_edge
+        self.n_poly = 2 * self.n_poly
+
+        print('Create VTK...')
+        # Delete previous data
+        if os.path.exists(self.dir_save):
+            shutil.rmtree(self.dir_save)
+        os.makedirs(self.dir_save)
+        # Generate vtk file
+        for ii in tqdm(range(niter)):
+            vert_xyz = self.find_geo_unit(theta_M[ii], theta_K[ii])
+            # print(vert_xyz)
+            # input()
+            # Dummy array for panel color
             strain = self.calc_facet_area(vert_xyz=vert_xyz)
-            self.write_vtk(ii, vert_xyz, strain)
+            self.write_vtk(ii, vert_xyz, strain, st_type='bi')
 
         if save_zip:
             zp = zipfile.ZipFile('%s.zip' % self.dir_save, 'w')

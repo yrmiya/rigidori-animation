@@ -16,9 +16,6 @@ import glob
 
 from tqdm import tqdm
 
-# Figure parameters
-# plt.style.use('./common/custom.mplstyle')
-
 
 class SingleCreaseAnalysis:
     def __init__(self, dir_save, fname_vtk):
@@ -175,11 +172,12 @@ class SingleCreaseAnalysis:
             shutil.rmtree(self.dir_save)
         os.makedirs(self.dir_save)
         # Generate vtk file
+        from .vecmat.op_vecmat import calc_facet_area
         for ii in tqdm(range(niter)):
             vert_xyz = self.find_geo_simplefold(theta_M[ii], self.La)
             # Dummy array for panel color
-            strain = (theta_M[ii] - theta_M[0]) / (theta_M[-1] - theta_M[0]) * np.ones(self.n_poly)
-            self.write_vtk(ii, vert_xyz, strain)
+            farea = calc_facet_area(vert_xyz=vert_xyz, Polyg=self.Polyg)
+            self.write_vtk(ii, vert_xyz, farea)
 
         if save_zip:
             zp = zipfile.ZipFile('%s.zip' % self.dir_save, 'w')
