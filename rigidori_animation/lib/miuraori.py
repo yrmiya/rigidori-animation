@@ -17,14 +17,18 @@ import glob
 from tqdm import tqdm
 
 # Figure parameters
-plt.style.use('./common/custom.mplstyle')
+# plt.style.use('./common/custom.mplstyle')
 
 
 class MiuraOriAnalysis:
-    def __init__(self,):
+    def __init__(self, dir_save, fname_vtk):
         print('{0:*^49}'.format(''))
         print('* {0:^45} *'.format('Miura-ori Static Analysis Tool'))
         print('{0:*^49}'.format(''))
+
+        # VTK export
+        self.dir_save = dir_save
+        self.fname_vtk = fname_vtk
 
         pass
 
@@ -98,7 +102,11 @@ class MiuraOriAnalysis:
         print('{0:*^49}'.format(''))
 
         if fig_out:
-            self.plot_projection(vert_xyz, figname='(init)')
+            from .plot_geometry import plot_projection
+            plot_projection(vert_xyz=vert_xyz,
+                            Polyg=self.Polyg,
+                            EdgeConct=self.EdgeConct,
+                            figname='(Miura-init)')
 
         return
 
@@ -150,16 +158,16 @@ class MiuraOriAnalysis:
         with open('%s/%s_%05d.vtk' % (self.dir_save, self.fname_vtk, fnum), 'w') as f:
             # Write header lines
             f.write('# vtk DataFile Version 3.0\n')
-            f.write('Single crease fold\n')
+            f.write('Miura ori\n')
             f.write('ASCII\n')
             num_points = np.size(vert_xyz, axis=0)
             f.write('DATASET POLYDATA\n')
             # Nodes
             # Specify number of nodes
-            f.write('POINTS %d float\n' % num_points)
+            f.write('POINTS %d double\n' % num_points)
             # Write x,y,z coodinates of all nodes
             for iv in range(num_points):
-                f.write("%f %f %f\n" % (vert_xyz[iv, 0], vert_xyz[iv, 1], vert_xyz[iv, 2]))
+                f.write("%.15e %.15e %.15e\n" % (vert_xyz[iv, 0], vert_xyz[iv, 1], vert_xyz[iv, 2]))
 
             #   POLYGONS
             num_dataset = self.n_poly
@@ -169,10 +177,10 @@ class MiuraOriAnalysis:
                 f.write('4 %d %d %d %d\n' % tuple(self.Polyg[ip, :]))
 
             f.write('CELL_DATA %d\n' % num_dataset)
-            f.write('SCALARS cell_scalars float\n')
+            f.write('SCALARS cell_scalars double\n')
             f.write('LOOKUP_TABLE default\n')
             for i in range(self.n_poly):
-                f.write('%e\n' % strain[i])
+                f.write('%.15e\n' % strain[i])
 
         return
 
@@ -180,9 +188,6 @@ class MiuraOriAnalysis:
                        save_zip: bool = False):
 
         niter = len(theta_M)
-        # VTK export
-        self.dir_save = './vtk_miura'
-        self.fname_vtk = 'miura'
 
         print('Create VTK...')
         # Delete previous data
@@ -203,85 +208,6 @@ class MiuraOriAnalysis:
             for i in range(len(dfile)):
                 zp.write(filename=dfile[i], arcname=None, compress_type=None, compresslevel=9)
             zp.close()
-
-        return
-
-    def plot_projection(self, vert_xyz: list | np.ndarray, figname: str = ''):
-        '''
-        plot_projection
-            Plot xy-plane, xz-plane, and yz-plane projection of the origami
-
-        Args:
-            vert_xyz (list | np.ndarray): xyz coordinates
-            figname (str, optional): Name of the figure. Defaults to ''.
-        '''
-
-        fig, ax = plt.subplots(1, 3, num='xy projection %s' % (figname), figsize=(18, 6))
-        # xy plane
-        # for i in range(self.n_node):
-        for i in range(self.n_node):
-            ax[0].scatter(vert_xyz[i, 0], vert_xyz[i, 1], s=80, zorder=2,)
-        for i in range(self.n_edge):
-            ax[0].plot(vert_xyz[self.EdgeConct[i, :], 0],
-                       vert_xyz[self.EdgeConct[i, :], 1],
-                       color='#444444',
-                       linewidth=2,
-                       zorder=1,
-                       )
-        for i in range(self.n_poly):
-            ax[0].fill(vert_xyz[self.Polyg[i, :], 0],
-                       vert_xyz[self.Polyg[i, :], 1],
-                       #    color='#444444',
-                       alpha=0.2,
-                       linewidth=2,
-                       zorder=0,
-                       )
-        ax[0].set_xlabel('$x$')
-        ax[0].set_ylabel('$y$')
-        ax[0].set_aspect('equal', 'box')
-        # xz plane
-        for i in range(self.n_node):
-            ax[1].scatter(vert_xyz[i, 0], vert_xyz[i, 2], s=80, zorder=2,)
-        for i in range(self.n_edge):
-            ax[1].plot(vert_xyz[self.EdgeConct[i, :], 0],
-                       vert_xyz[self.EdgeConct[i, :], 2],
-                       color='#444444',
-                       linewidth=2,
-                       zorder=1,
-                       )
-        for i in range(self.n_poly):
-            ax[1].fill(vert_xyz[self.Polyg[i, :], 0],
-                       vert_xyz[self.Polyg[i, :], 2],
-                       #    color='#444444',
-                       alpha=0.2,
-                       linewidth=2,
-                       zorder=0,
-                       )
-        ax[1].set_xlabel('$x$')
-        ax[1].set_ylabel('$z$')
-        ax[1].set_aspect('equal', 'box')
-        # yz plane
-        for i in range(self.n_node):
-            ax[2].scatter(vert_xyz[i, 1], vert_xyz[i, 2], s=80, zorder=2,)
-        for i in range(self.n_edge):
-            ax[2].plot(vert_xyz[self.EdgeConct[i, :], 1],
-                       vert_xyz[self.EdgeConct[i, :], 2],
-                       color='#444444',
-                       linewidth=2,
-                       zorder=1,
-                       )
-        for i in range(self.n_poly):
-            ax[2].fill(vert_xyz[self.Polyg[i, :], 1],
-                       vert_xyz[self.Polyg[i, :], 2],
-                       #    color='#444444',
-                       alpha=0.2,
-                       linewidth=2,
-                       zorder=0,
-                       )
-        ax[2].set_xlabel('$y$')
-        ax[2].set_ylabel('$z$')
-        ax[2].set_aspect('equal', 'box')
-        fig.tight_layout()
 
         return
 

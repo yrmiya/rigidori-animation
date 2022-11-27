@@ -9,7 +9,6 @@ import numpy.typing as npt
 from scipy import optimize
 from scipy import interpolate
 import matplotlib
-matplotlib.use('QtAgg')  # Backend
 import matplotlib.pyplot as plt
 
 import sys
@@ -21,11 +20,11 @@ import glob
 from tqdm import tqdm
 
 # Figure parameters
-plt.style.use('./common/custom.mplstyle')
+# plt.style.use('./common/custom.mplstyle')
 
 
 class ReschOrigamiAnalysis:
-    def __init__(self,):
+    def __init__(self, dir_save, fname_vtk):
         print('{0:*^49}'.format(''))
         print('* {0:^45} *'.format('Resch Origami Static Analysis Tool'))
         print('{0:*^49}'.format(''))
@@ -41,6 +40,9 @@ class ReschOrigamiAnalysis:
         self.T_4 = T_4
         self.T_5 = T_5
         self.T_6 = T_6
+
+        self.dir_save = dir_save
+        self.fname_vtk = fname_vtk
 
         pass
 
@@ -549,8 +551,6 @@ class ReschOrigamiAnalysis:
             vert_xyz[i, 48:54, :] = B_global[[8, 15, 22, 29, 30, 37]]
 
         if vtk_out:
-            self.dir_save = './vtk_resch63_1orbit'
-            self.fname_vtk = 'resch63_1orbit'
             if os.path.exists(self.dir_save):
                 shutil.rmtree(self.dir_save)
             os.makedirs(self.dir_save)
@@ -567,8 +567,15 @@ class ReschOrigamiAnalysis:
                 zp.close()
 
         if fig_out:
-            self.plot_projection(vert_xyz[0], figname='(initial)')
-            self.plot_projection(vert_xyz[-1], figname='(final)')
+            from .plot_geometry import plot_projection
+            plot_projection(vert_xyz=vert_xyz[0],
+                            Polyg=self.Polyg,
+                            EdgeConct=self.EdgeConct,
+                            figname='(Resck63O1-init)')
+            plot_projection(vert_xyz=vert_xyz[-1],
+                            Polyg=self.Polyg,
+                            EdgeConct=self.EdgeConct,
+                            figname='(Resck63O1-final)')
 
         return vert_xyz
 
@@ -580,9 +587,9 @@ class ReschOrigamiAnalysis:
             f.write('ASCII\n')
             num_points = np.size(vert_xyz, axis=0)
             f.write('DATASET POLYDATA\n')
-            f.write('POINTS %d float\n' % num_points)
+            f.write('POINTS %d double\n' % num_points)
             for i in range(num_points):
-                f.write("%f %f %f\n" % (vert_xyz[i, 0], vert_xyz[i, 1], vert_xyz[i, 2]))
+                f.write("%.15e %.15e %.15e\n" % (vert_xyz[i, 0], vert_xyz[i, 1], vert_xyz[i, 2]))
 
             num_dataset = self.n_poly_tri + self.n_poly_hex
             num_datanum = 4 * self.n_poly_tri + 7 * self.n_poly_hex
@@ -595,84 +602,6 @@ class ReschOrigamiAnalysis:
             for ip in range(self.n_poly_hex):
                 f.write('6 %d %d %d %d %d %d\n' % (self.Polyg_hex[ip, 0], self.Polyg_hex[ip, 1],
                         self.Polyg_hex[ip, 2], self.Polyg_hex[ip, 3], self.Polyg_hex[ip, 4], self.Polyg_hex[ip, 5]))
-
-        return
-
-    def plot_projection(self, vert_xyz: list | np.ndarray, figname: str = ''):
-        '''
-        plot_projection
-            Plot xy-plane, xz-plane, and yz-plane projection of the origami
-
-        Args:
-            vert_xyz (list | np.ndarray): xyz coordinates
-            figname (str, optional): Name of the figure. Defaults to ''.
-        '''
-
-        fig, ax = plt.subplots(1, 3, num='xy projection %s' % (figname), figsize=(18, 6))
-        # xy plane
-        for i in range(self.n_node):
-            ax[0].scatter(vert_xyz[i, 0], vert_xyz[i, 1], s=80, zorder=2,)
-        for i in range(self.n_edge):
-            ax[0].plot(vert_xyz[self.EdgeConct[i, :], 0],
-                       vert_xyz[self.EdgeConct[i, :], 1],
-                       color='#444444',
-                       linewidth=2,
-                       zorder=1,
-                       )
-        for i in range(self.n_poly):
-            ax[0].fill(vert_xyz[self.Polyg[i][:], 0],
-                       vert_xyz[self.Polyg[i][:], 1],
-                       #    color='#444444',
-                       alpha=0.2,
-                       linewidth=2,
-                       zorder=0,
-                       )
-        ax[0].set_xlabel('$x$')
-        ax[0].set_ylabel('$y$')
-        ax[0].set_aspect('equal', 'box')
-        # xz plane
-        for i in range(self.n_node):
-            ax[1].scatter(vert_xyz[i, 0], vert_xyz[i, 2], s=80, zorder=2,)
-        for i in range(self.n_edge):
-            ax[1].plot(vert_xyz[self.EdgeConct[i, :], 0],
-                       vert_xyz[self.EdgeConct[i, :], 2],
-                       color='#444444',
-                       linewidth=2,
-                       zorder=1,
-                       )
-        for i in range(self.n_poly):
-            ax[1].fill(vert_xyz[self.Polyg[i][:], 0],
-                       vert_xyz[self.Polyg[i][:], 2],
-                       #    color='#444444',
-                       alpha=0.2,
-                       linewidth=2,
-                       zorder=0,
-                       )
-        ax[1].set_xlabel('$x$')
-        ax[1].set_ylabel('$z$')
-        ax[1].set_aspect('equal', 'box')
-        # yz plane
-        for i in range(self.n_node):
-            ax[2].scatter(vert_xyz[i, 1], vert_xyz[i, 2], s=80, zorder=2,)
-        for i in range(self.n_edge):
-            ax[2].plot(vert_xyz[self.EdgeConct[i, :], 1],
-                       vert_xyz[self.EdgeConct[i, :], 2],
-                       color='#444444',
-                       linewidth=2,
-                       zorder=1,
-                       )
-        for i in range(self.n_poly):
-            ax[2].fill(vert_xyz[self.Polyg[i][:], 1],
-                       vert_xyz[self.Polyg[i][:], 2],
-                       #    color='#444444',
-                       alpha=0.2,
-                       linewidth=2,
-                       zorder=0,
-                       )
-        ax[2].set_xlabel('$y$')
-        ax[2].set_ylabel('$z$')
-        ax[2].set_aspect('equal', 'box')
-        fig.tight_layout()
 
         return
 

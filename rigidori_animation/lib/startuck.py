@@ -124,7 +124,11 @@ class StartuckAnalysisTool:
         print('{0:*^49}'.format(''))
 
         if fig_out:
-            self.plot_projection(vert_xyz, figname='(init)')
+            from .plot_geometry import plot_projection
+            plot_projection(vert_xyz=vert_xyz,
+                            Polyg=self.Polyg,
+                            EdgeConct=self.EdgeConct,
+                            figname='(Startuck-init)')
 
         return
 
@@ -186,7 +190,7 @@ class StartuckAnalysisTool:
 
         return facet_area
 
-    def write_vtk(self, fnum: int, vert_xyz: npt.ArrayLike, cell_val: npt.ArrayLike):
+    def write_vtk(self, fnum: int, vert_xyz: npt.ArrayLike, strain: npt.ArrayLike, st_type: str = 'mono'):
         '''
         write_vtk
             Exports vtk file of the structure.
@@ -195,14 +199,14 @@ class StartuckAnalysisTool:
         Args:
             fnum (int): File number in integer.
             vert_xyz (npt.ArrayLike): xyz coordinates of all nodes
-            cell_val (npt.ArrayLike): Value used for coloring the polygons
+            strain (npt.ArrayLike): Value used for coloring the polygons
         '''
 
         # Open file
         with open('%s/%s_%05d.vtk' % (self.dir_save, self.fname_vtk, fnum), 'w') as f:
             # Write header lines
             f.write('# vtk DataFile Version 3.0\n')
-            f.write('Single crease fold\n')
+            f.write('%s Startuck\n' % self.st_profile)
             f.write('ASCII\n')
             num_points = np.size(vert_xyz, axis=0)
             f.write('DATASET POLYDATA\n')
@@ -224,7 +228,7 @@ class StartuckAnalysisTool:
             f.write('SCALARS cell_scalars double\n')
             f.write('LOOKUP_TABLE default\n')
             for i in range(self.n_poly):
-                f.write('%.15e\n' % cell_val[i])
+                f.write('%.15e\n' % strain[i])
 
         return
 
@@ -245,8 +249,8 @@ class StartuckAnalysisTool:
         for ii in tqdm(range(niter)):
             vert_xyz = self.find_geo_triangle(theta_M[ii])
             # Dummy array for panel color
-            farea = self.calc_facet_area(vert_xyz=vert_xyz)
-            self.write_vtk(ii, vert_xyz, farea)
+            strain = self.calc_facet_area(vert_xyz=vert_xyz)
+            self.write_vtk(ii, vert_xyz, strain)
 
         if save_zip:
             zp = zipfile.ZipFile('%s.zip' % self.dir_save, 'w')
@@ -255,85 +259,6 @@ class StartuckAnalysisTool:
             for i in range(len(dfile)):
                 zp.write(filename=dfile[i], arcname=None, compress_type=None, compresslevel=9)
             zp.close()
-
-        return
-
-    def plot_projection(self, vert_xyz: list | np.ndarray, figname: str = ''):
-        '''
-        plot_projection
-            Plot xy-plane, xz-plane, and yz-plane projection of the origami
-
-        Args:
-            vert_xyz (list | np.ndarray): xyz coordinates
-            figname (str, optional): Name of the figure. Defaults to ''.
-        '''
-
-        fig, ax = plt.subplots(1, 3, num='xy projection %s' % (figname), figsize=(18, 6))
-        # xy plane
-        # for i in range(self.n_node):
-        for i in range(self.n_node):
-            ax[0].scatter(vert_xyz[i, 0], vert_xyz[i, 1], s=80, zorder=2,)
-        for i in range(self.n_edge):
-            ax[0].plot(vert_xyz[self.EdgeConct[i, :], 0],
-                       vert_xyz[self.EdgeConct[i, :], 1],
-                       color='#444444',
-                       linewidth=2,
-                       zorder=1,
-                       )
-        for i in range(self.n_poly):
-            ax[0].fill(vert_xyz[self.Polyg[i, :], 0],
-                       vert_xyz[self.Polyg[i, :], 1],
-                       #    color='#444444',
-                       alpha=0.2,
-                       linewidth=2,
-                       zorder=0,
-                       )
-        ax[0].set_xlabel('$x$')
-        ax[0].set_ylabel('$y$')
-        ax[0].set_aspect('equal', 'box')
-        # xz plane
-        for i in range(self.n_node):
-            ax[1].scatter(vert_xyz[i, 0], vert_xyz[i, 2], s=80, zorder=2,)
-        for i in range(self.n_edge):
-            ax[1].plot(vert_xyz[self.EdgeConct[i, :], 0],
-                       vert_xyz[self.EdgeConct[i, :], 2],
-                       color='#444444',
-                       linewidth=2,
-                       zorder=1,
-                       )
-        for i in range(self.n_poly):
-            ax[1].fill(vert_xyz[self.Polyg[i, :], 0],
-                       vert_xyz[self.Polyg[i, :], 2],
-                       #    color='#444444',
-                       alpha=0.2,
-                       linewidth=2,
-                       zorder=0,
-                       )
-        ax[1].set_xlabel('$x$')
-        ax[1].set_ylabel('$z$')
-        ax[1].set_aspect('equal', 'box')
-        # yz plane
-        for i in range(self.n_node):
-            ax[2].scatter(vert_xyz[i, 1], vert_xyz[i, 2], s=80, zorder=2,)
-        for i in range(self.n_edge):
-            ax[2].plot(vert_xyz[self.EdgeConct[i, :], 1],
-                       vert_xyz[self.EdgeConct[i, :], 2],
-                       color='#444444',
-                       linewidth=2,
-                       zorder=1,
-                       )
-        for i in range(self.n_poly):
-            ax[2].fill(vert_xyz[self.Polyg[i, :], 1],
-                       vert_xyz[self.Polyg[i, :], 2],
-                       #    color='#444444',
-                       alpha=0.2,
-                       linewidth=2,
-                       zorder=0,
-                       )
-        ax[2].set_xlabel('$y$')
-        ax[2].set_ylabel('$z$')
-        ax[2].set_aspect('equal', 'box')
-        fig.tight_layout()
 
         return
 
@@ -350,4 +275,13 @@ if __name__ == "__main__":
 
     theta_S = sat.calc_thetaS(theta_M)
 
+    # plt.figure('theta_MS', figsize=(8, 3))
+    # plt.plot(np.degrees(theta_M), np.degrees(theta_S))
+    # plt.xlabel('$\\theta_M$ (deg)')
+    # plt.ylabel('$\\theta_S$ (deg)')
+    # plt.tight_layout()
+    # plt.show()
+    # exit()
+
     sat.create_3Dmodel(theta_M=theta_M, save_zip=False)
+    sat.create_3Dmodel_unit(theta_M=theta_M, save_zip=False)

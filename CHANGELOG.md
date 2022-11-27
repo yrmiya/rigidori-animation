@@ -5,6 +5,8 @@
 ### Added
 
 - Add CHANGELOG.md
+- Moved plot_projection function to independent module
+- Fixed vtk file object name
 
 ## v0.5.1 (2022-11-24)
 
