@@ -133,15 +133,6 @@ class MiuraOriAnalysis:
 
         return vert_xyz
 
-    def calc_facet_area(self, vert_xyz: npt.ArrayLike):
-        facet_area = np.zeros(self.n_poly)
-        for ip in range(self.n_poly):
-            vec1 = vert_xyz[self.Polyg[ip, 0], :] - vert_xyz[self.Polyg[ip, 1], :]
-            vec2 = vert_xyz[self.Polyg[ip, 2], :] - vert_xyz[self.Polyg[ip, 1], :]
-            facet_area[ip] = np.linalg.norm(np.cross(vec1, vec2))
-
-        return facet_area
-
     def write_vtk(self, fnum: int, vert_xyz: npt.ArrayLike, strain: npt.ArrayLike):
         '''
         write_vtk
