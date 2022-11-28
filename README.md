@@ -2,7 +2,8 @@
 
 [![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/yrmiya/rigidori-animation?color=0033&include_prereleases&sort=semver)](https://github.com/yrmiya/rigidori-animation/releases/latest)
 
-The repository contains a package to create vtk files for rigid origami animation.
+The repository contains a package to create legacy vtk files for rigid origami animation.
+For the detail of legacy vtk format, refer to [official documentation](https://kitware.github.io/vtk-examples/site/VTKFileFormats/).
 
 The current version supports:
 
