@@ -51,11 +51,16 @@ def clean_all(args):
     import glob
     import os
     import shutil
-    fpath = './vtk_*'
-    dfile = glob.glob(fpath)
-    if len(dfile) > 0:
-        for i in range(len(dfile)):
-            shutil.rmtree(path=dfile[i])
+    fpath1 = './vtk_*.zip'
+    dfile1 = glob.glob(fpath1)
+    if len(dfile1) > 0:
+        for i in range(len(dfile1)):
+            os.remove(path=dfile1[i])
+        fpath2 = './vtk_*'
+        dfile2 = glob.glob(fpath2)
+        if len(dfile2) > 0:
+            for i in range(len(dfile2)):
+                shutil.rmtree(path=dfile2[i])
         print('Cleaned all previous results')
     else:
         print('No previous results to remove')

@@ -2,7 +2,9 @@
 
 ## [Unreleased]
 
-None
+### Fixed
+
+- Fix clean command returning error when encountered zip file
 
 ## v0.5.2 (2022-11-27)
 
