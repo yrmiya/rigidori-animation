@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+None
+
+## v0.5.2 (2022-11-27)
+
 ### Added
 
 - Add CHANGELOG.md
