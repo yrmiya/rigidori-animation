@@ -51,16 +51,11 @@ def clean_all(args):
     import glob
     import os
     import shutil
-
-    fpath0 = './vtk_*.zip'
-    dfile0 = glob.glob(fpath0)
-    if len(dfile0) > 0:
-        for i in range(len(dfile0)):
-            os.remove(dfile0[i])
-        fpath1 = './vtk_*'
-        dfile1 = glob.glob(fpath1)
-        for i in range(len(dfile1)):
-            shutil.rmtree(path=dfile1[i])
+    fpath = './vtk_*'
+    dfile = glob.glob(fpath)
+    if len(dfile) > 0:
+        for i in range(len(dfile)):
+            shutil.rmtree(path=dfile[i])
         print('Cleaned all previous results')
     else:
         print('No previous results to remove')
@@ -89,7 +84,7 @@ def default_run(args):
             fname_vtk = 'singlecrease'
 
             from .lib.singlecrease import SingleCreaseAnalysis
-            sca = SingleCreaseAnalysis()
+            sca = SingleCreaseAnalysis(dir_save, fname_vtk)
             sca.geo_init_simplefold(La=La, theta_M0=theta_M[0], fig_out=fig_out)
             sca.create_3Dmodel_simplefold(theta_M, save_zip=save_zip)
 
@@ -102,7 +97,7 @@ def default_run(args):
             fname_vtk = 'miura'
 
             from .lib.miuraori import MiuraOriAnalysis
-            moa = MiuraOriAnalysis()
+            moa = MiuraOriAnalysis(dir_save, fname_vtk)
 
             moa.geo_init_miura(La=La, Lb=Lb, Ld=Ld,
                                alpha=alpha,
@@ -118,7 +113,7 @@ def default_run(args):
             fname_vtk = 'resch63_1orbit'
 
             from .lib.resch_hex import ReschOrigamiAnalysis
-            roa = ReschOrigamiAnalysis()
+            roa = ReschOrigamiAnalysis(dir_save, fname_vtk)
 
             if use_lookuptab:
                 theta_MKJS = None
