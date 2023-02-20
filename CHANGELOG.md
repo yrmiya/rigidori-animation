@@ -2,9 +2,26 @@
 
 ## [Unreleased]
 
+None
+
+## v0.5.4 (2023-02-20)
+
+### Added
+
+- Add node number to projection
+- Kresling geometry initializer 
+
+### Changed
+
+- Change package name from `rigidori_animation` to `ori-anime`
+- Update readme accordingly
+
 ### Fixed
 
-- Fix clean command returning error when encountered zip file
+- Remove empty entry in Resch vtk
+- Add missing panels in Resch vtk
+- Remove `./` from relative path import
+- Fix `clean` sub-command returning error
 
 ## v0.5.2 (2022-11-27)
 

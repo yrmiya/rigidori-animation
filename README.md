@@ -2,8 +2,7 @@
 
 [![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/yrmiya/rigidori-animation?color=0033&include_prereleases&sort=semver)](https://github.com/yrmiya/rigidori-animation/releases/latest)
 
-The repository contains a package to create legacy vtk files for rigid origami animation.
-For the detail of legacy vtk format, refer to [official documentation](https://kitware.github.io/vtk-examples/site/VTKFileFormats/).
+The repository contains a package to create vtk files for rigid origami animation.
 
 The current version supports:
 
@@ -18,7 +17,7 @@ The current version supports:
 
 ## List of packages
 
-- rigidori_animation: Exports animation of selected rigid origami
+- ori-anim: Exports animation of selected rigid origami
 
 ## Requirements
 
@@ -36,13 +35,13 @@ The current version supports:
 In root directory of the project, run the program with origami type specified (ori_type), e.g., for Miura-ori,
 
 ```sh
-python -m rigidori_animation run --ori_type miura
+python -m ori-anime run --ori_type miura
 ```
 
 or
 
 ```sh
-python3 -m rigidori_animation run --ori_type miura
+python3 -m ori-anime run --ori_type miura
 ```
 
 For single crease fold, Resch, and startuck, give "crease", "resch", and "startuck" respectively, instead of "miura".
@@ -51,13 +50,13 @@ Without other arguments, the program generates vtk files with default parameters
 To define geometry, number of data points, and other options, see
 
 ```sh
-python -m rigidori_animation run -h
+python -m ori-anime run -h
 ```
 
 or
 
 ```sh
-python3 -m rigidori_animation run -h
+python3 -m ori-anime run -h
 ```
 
 ### Clean previous results
@@ -65,13 +64,13 @@ python3 -m rigidori_animation run -h
 To clean all previous results (`vtk_*/` directories and zip files) in the root directory, run
 
 ```sh
-python -m rigidori_animation clean
+python -m ori-anime clean
 ```
 
 or
 
 ```sh
-python3 -m rigidori_animation clean
+python3 -m ori-anime clean
 ```
 
 ## Setting up environment

@@ -10,7 +10,7 @@ def main():
     parser_clean.set_defaults(handler=clean_all)
 
     parser_main.add_argument('-ori', '--ori_type', help='Type of origami (crease|miura|resch)',
-                             choices=['crease', 'miura', 'resch', 'startuck'],
+                             choices=['crease', 'miura', 'resch', 'startuck', 'kres'],
                              type=str, required=True)
     # Universal arguments
     parser_main.add_argument('-la', '--lengtha', help='Side length of crease "a" (float, default=1.0)', type=float, default=1.0)
@@ -25,6 +25,13 @@ def main():
     group_miura.add_argument('-lb', '--lengthb', help='Side length of crease "b" (float, default=1.0)', type=float, default=1.0)
     group_miura.add_argument('-ld', '--lengthd', help='Side length of crease "d" (float, default=1.0)', type=float, default=1.0)
     group_miura.add_argument('-alpha', '--alpha', help='Apex angle "alpha" (float, default=60 deg)', type=float, default=60.0)
+    group_miura.add_argument('-unitx', '--unitx', help='Number of unit in x direction', type=int, default=1)
+    # Unique to Kresling
+    group_kresling = parser_main.add_argument_group('Kresling', 'Unique to Kresling-ori')
+    group_kresling.add_argument('-h0', '--h0', help='Initial height (float, default=1)', type=float, default=1.0)
+    group_kresling.add_argument('-ph0', '--ph0', help='Initial rotation (float, default=60 deg)', type=float, default=60.0)
+    group_kresling.add_argument('-unit', '--unit', help='Number of unit in x direction', type=int, default=1)
+    group_kresling.add_argument('-side', '--side', help='Number of side of polygonal section', type=int, default=6)
     # Unique to resch
     group_resch = parser_main.add_argument_group('Resch-patterned origami', 'Unique to Resch-patterned origami')
     group_resch.add_argument('-lkup', '--lookuptab',
@@ -37,6 +44,9 @@ def main():
                             choices=['tri'],
                             type=str,
                             default='tri')
+    group_star.add_argument('-bi', '--bistartuck',
+                            help='Export two startuck tessellation',
+                            action='store_true')
 
     args = parser.parse_args()
     if hasattr(args, "handler"):
@@ -63,14 +73,21 @@ def clean_all(args):
                 shutil.rmtree(path=dfile2[i])
         print('Cleaned all previous results')
     else:
-        print('No previous results to remove')
+        fpath2 = './vtk_*'
+        dfile2 = glob.glob(fpath2)
+        if len(dfile2) > 0:
+            for i in range(len(dfile2)):
+                shutil.rmtree(path=dfile2[i])
+            print('Cleaned all previous results')
+        else:
+            print('No previous results to remove')
     return
 
 
 def default_run(args):
     import numpy as np
     import matplotlib.pyplot as plt
-    plt.style.use('./common/custom.mplstyle')  # Relative to root directory
+    plt.style.use('common/custom.mplstyle')  # Relative to root directory
 
     ori_type = args.ori_type
     La = args.lengtha
@@ -97,6 +114,7 @@ def default_run(args):
             Lb = args.lengthb
             Ld = args.lengthb
             alpha = np.radians(args.alpha)
+            n_unitx = args.unitx
 
             dir_save = './vtk_miura'
             fname_vtk = 'miura'
@@ -108,9 +126,30 @@ def default_run(args):
                                alpha=alpha,
                                theta_M0=theta_M[0],
                                fig_out=fig_out,
-                               n_unitx=1, n_unity=1)
+                               n_unitx=n_unitx, n_unity=1)
             moa.create_3Dmodel(theta_M=theta_M,
                                save_zip=save_zip)
+
+        case 'kres':
+            n_unit = args.unit
+            n_side = args.side
+            Lc = La
+            h0 = args.h0
+            ph0 = np.radians(args.ph0)
+
+            dir_save = './vtk_kresling'
+            fname_vtk = 'kresling'
+
+            from .lib.kresling import KreslingAnalysis
+            kres = KreslingAnalysis(dir_save, fname_vtk)
+
+            kres.geo_init_kres(n_unit=n_unit,
+                               n_side=n_side,
+                               Lc=Lc,
+                               h0=h0,
+                               ph0=ph0)
+            disp = np.linspace(0, h0, nbin)
+
         case 'resch':
             use_lookuptab = args.lookuptab
 
@@ -151,6 +190,9 @@ def default_run(args):
                                    fig_out=fig_out)
 
             star.create_3Dmodel(theta_M=theta_M, save_zip=save_zip)
+            bistartuck = args.bistartuck
+            if bistartuck:
+                star.create_3Dmodel_unit(theta_M=theta_M, save_zip=save_zip)
 
     if save_zip and clean_vtk:
         import shutil
