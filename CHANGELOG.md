@@ -4,12 +4,26 @@
 
 None
 
+## v0.7.0 (2023-02-28)
+
+### Added
+
+### Changed
+
+- Change Miura-ori model
+  - Now support Miura-ori tessellation
+  - Miura-ori unit definition is now single panel (i.e., 2x2 is conventional unit cell with 4 facets)
+    - Defaul numbers of unit in x and y direction are set to 2 for both.
+  - Orientation is changed
+
+### Fixed
+
 ## v0.6.0 (2023-02-20)
 
 ### Added
 
 - Add node number to projection
-- Kresling geometry initializer 
+- Kresling geometry initializer
 
 ### Changed
 
@@ -21,7 +35,6 @@ None
 - Remove empty entry in Resch vtk
 - Add missing panels in Resch vtk
 - Remove `./` from relative path import
-- Fix `clean` sub-command returning error
 
 ## v0.5.2 (2022-11-27)
 

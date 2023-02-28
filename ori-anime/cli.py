@@ -25,7 +25,8 @@ def main():
     group_miura.add_argument('-lb', '--lengthb', help='Side length of crease "b" (float, default=1.0)', type=float, default=1.0)
     group_miura.add_argument('-ld', '--lengthd', help='Side length of crease "d" (float, default=1.0)', type=float, default=1.0)
     group_miura.add_argument('-alpha', '--alpha', help='Apex angle "alpha" (float, default=60 deg)', type=float, default=60.0)
-    group_miura.add_argument('-unitx', '--unitx', help='Number of unit in x direction', type=int, default=1)
+    group_miura.add_argument('-nx', '--unitx', help='Number of unit in x direction', type=int, default=2)
+    group_miura.add_argument('-ny', '--unity', help='Number of unit in y direction', type=int, default=2)
     # Unique to Kresling
     group_kresling = parser_main.add_argument_group('Kresling', 'Unique to Kresling-ori')
     group_kresling.add_argument('-h0', '--h0', help='Initial height (float, default=1)', type=float, default=1.0)
@@ -88,6 +89,9 @@ def default_run(args):
     import numpy as np
     import matplotlib.pyplot as plt
     plt.style.use('common/custom.mplstyle')  # Relative to root directory
+    # import PyQt6
+    # import matplotlib
+    # matplotlib.use('qtagg')
 
     ori_type = args.ori_type
     La = args.lengtha
@@ -115,6 +119,7 @@ def default_run(args):
             Ld = args.lengthb
             alpha = np.radians(args.alpha)
             n_unitx = args.unitx
+            n_unity = args.unity
 
             dir_save = './vtk_miura'
             fname_vtk = 'miura'
@@ -126,7 +131,8 @@ def default_run(args):
                                alpha=alpha,
                                theta_M0=theta_M[0],
                                fig_out=fig_out,
-                               n_unitx=n_unitx, n_unity=1)
+                               n_unitx=n_unitx,
+                               n_unity=n_unity)
             moa.create_3Dmodel(theta_M=theta_M,
                                save_zip=save_zip)
 
