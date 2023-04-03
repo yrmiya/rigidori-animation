@@ -20,7 +20,7 @@ import glob
 from tqdm import tqdm
 
 # Figure parameters
-plt.style.use('./common/custom.mplstyle')
+plt.style.use('common/custom.mplstyle')
 
 
 class StartuckAnalysisTool:
