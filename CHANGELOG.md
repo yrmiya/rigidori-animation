@@ -1,8 +1,9 @@
 # Change Log
 
-## [Unreleased]
+## v0.7.1 (2023-11-21)
 
-None
+- Updated `README.md`
+- Added `LICENSE.md`
 
 ## v0.7.0 (2023-02-28)
 
@@ -13,7 +14,7 @@ None
 - Change Miura-ori model
   - Now support Miura-ori tessellation
   - Miura-ori unit definition is now single panel (i.e., 2x2 is conventional unit cell with 4 facets)
-    - Defaul numbers of unit in x and y direction are set to 2 for both.
+    - Default numbers of unit in x and y direction are set to 2 for both.
   - Orientation is changed
 
 ### Fixed
